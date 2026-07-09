@@ -1,0 +1,35 @@
+# --- 依存関係・ビルド成果物 ---
+node_modules/
+dist/
+build/
+*.log
+.DS_Store
+Thumbs.db
+
+# --- 開発補助ツール（cshogi/python-shogi等の環境） ---
+tools/venv/
+tools/__pycache__/
+*.pyc
+
+# --- ライセンス保留中の素材（暫定対応） ---
+# 振電3（Shinden3）評価関数・実行ファイル：
+# 開発者本人が無償公開を明言しているが、正式なライセンス文書がなく
+# 再配布可否が未確認のため、確認が取れるまでリポジトリの管理対象から除外する。
+# 詳細: docs/ASSETS_CREDITS.md および docs/SYSTEM_DESIGN.md 8.1 を参照
+ShogiAI/Shinden3/eval/
+ShogiAI/Shinden3/*.exe
+
+# ローカル検証専用ディレクトリ（gitで管理しない実験用置き場）
+/local-only/
+
+# --- 大容量バイナリの誤コミット防止（評価関数ファイル全般） ---
+# 使用許可済みの評価関数（水匠5・Hao・リゼロ）は ShogiAI/*/eval/ 配下で明示的に管理
+# それ以外の *.bin の誤コミットを防ぐ
+/*.bin
+/**/*.bin
+!ShogiAI/*/eval/*.bin
+
+# --- OS・エディタ関連 ---
+.vscode/
+.idea/
+*.swp
