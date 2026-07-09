@@ -1,0 +1,37 @@
+shogi_rpg
+
+Copyright (C) YacobiHime
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+---
+
+## このプロジェクトのライセンスについて
+
+本プロジェクトは将棋AIエンジン「やねうら王」（YaneuraOu / GPLv3系。
+Stockfish・Apery・SilentMajority由来のコードを含むため、それらのライセンスに従う）を
+組み込むため、リポジトリ全体を **GNU General Public License v3.0 (GPLv3)** の下で公開します。
+
+GPLv3の完全な条文は以下を参照してください：
+https://www.gnu.org/licenses/gpl-3.0.txt
+
+## 本プロジェクトに含まれない、または個別ライセンスが適用されるもの
+
+以下は本プロジェクトのGPLv3の対象外、または別途ライセンス条件が適用されます。
+詳細は `ASSETS_CREDITS.md` を参照してください。
+
+- 素材（画像・音声等）：それぞれのライセンス表記に従う（CC BY-SA 等）
+- NNUE評価関数ファイル：自由配布が明言されているもののみ同梱（例：リゼロ評価関数）。
+  支援者限定配布の評価関数（水匠 等）は本リポジトリに含まない
+- ティラノスクリプト本体：ティラノスクリプト自体のライセンス（別途公式サイトを参照）に従う

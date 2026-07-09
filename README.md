@@ -25,6 +25,13 @@
 - [システム設計書](./SYSTEM_DESIGN.md)
 - [プロジェクト計画書](./PROJECT_PLAN.md)
 - [仕様書](./SPECIFICATION.md)
+- [データスキーマ定義](./DATA_SCHEMA.md)
+- [用語集](./GLOSSARY.md)
+- [変更履歴](./CHANGELOG.md)
+- [コントリビューションガイド](./CONTRIBUTING.md)
+- [素材・クレジット台帳](./ASSETS_CREDITS.md)
+- [行動規範](./CODE_OF_CONDUCT.md)
+- [ライセンス](./LICENSE)
 
 ## ホスティング方針
 
