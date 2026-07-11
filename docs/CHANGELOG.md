@@ -36,9 +36,37 @@
 - ASSETS_CREDITS.md 作成
 - GLOSSARY.md 作成
 
+### マイルストーン0（技術検証）
+
+#### 進行中
+
+- arashigaoka/YaneuraOu.wasm v0.1.2（npmパッケージ）の検証環境を構築
+  - npmパッケージ `yaneuraou.wasm` からビルド済み資産を取得
+  - WASMファイル（yaneuraou.js, yaneuraou.wasm, yaneuraou.data）を配置
+  - COOP/COEPヘッダー対応の簡易HTTPサーバー（server.js）を作成
+  - worker.jsをarashigaoka版API（YaneuraOu）に対応させて実装
+- WASMビルド（GPL-3.0、評価関数k-p-256-32-32）を確認、ASSETS_CREDITS.mdに記録
+
+#### 検証記録：mizar版の試行と失敗（2026-07-11）
+
+- mizar/YaneuraOu.wasm v7.6.3-alpha.0の検証を試みたが失敗
+  - Suisho5 HalfKP版（61MB）をダウンロード・試行 → SharedArrayBuffer/PThread問題で動作せず
+  - SuishoPetite k-p版（1.4MB）をダウンロード・試行 → 同じくSharedArrayBuffer問題で動作せず
+  - 原因: mizar版のWASMビルドはPThread（マルチスレッド）を使用しており、SharedArrayBufferが必須
+  - COOP/COEPヘッダーを設定してもSharedArrayBufferが有効にならず、WASM初期化時にエラー
+  - Chromeの機能フラグ（Experimental WebAssembly features）でも解決せず
+  - 結論: 技術検証の目的を達成するため、arashigaoka版（シングルスレッド版）を使用
+
+#### 次のステップ
+
+1. Webサーバーを起動: `cd tools/m0-verification && node server.js`
+2. Chromeで http://localhost:8000/index.html にアクセス
+3. USI通信・強さ調整・速度計測の検証を実施
+4. 結果を本セクションに記録
+
 ### 未着手
 
-- マイルストーン0（技術検証）以降は未着手
+- マイルストーン1以降は未着手
 
 ---
 

@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>M0 WASM検証 - YaneuraOu Web Worker</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      font-family: 'Consolas', 'Monaco', monospace;
+      background: #1e1e1e;
+      color: #d4d4d4;
+    }
+    h1 {
+      color: #4ec9b0;
+      margin-bottom: 10px;
+    }
+    .status {
+      margin-bottom: 20px;
+      padding: 10px;
+      background: #2d2d2d;
+      border-radius: 4px;
+    }
+    .status-item {
+      margin: 5px 0;
+    }
+    .status-label {
+      color: #569cd6;
+      font-weight: bold;
+    }
+    #output {
+      background: #252526;
+      padding: 15px;
+      border-radius: 4px;
+      max-height: 500px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      font-size: 13px;
+      line-height: 1.4;
+    }
+    .log-usi { color: #ce9178; }
+    .log-info { color: #6a9955; }
+    .log-bestmove { color: #dcdcaa; font-weight: bold; }
+    .log-error { color: #f48771; }
+    .log-time { color: #4ec9b0; }
+    button {
+      background: #0e639c;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      margin: 5px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    button:hover { background: #1177bb; }
+    button:disabled { background: #3a3a3a; cursor: not-allowed; }
+    .controls {
+      margin: 20px 0;
+      padding: 15px;
+      background: #2d2d2d;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <h1>マイルストーン0: WASM検証環境</h1>
+
+  <div class="status">
+    <div class="status-item">
+      <span class="status-label">WASMビルド:</span>
+      <span>arashigaoka/YaneuraOu.wasm v0.1.2（技術検証用）</span>
+    </div>
+    <div class="status-item">
+      <span class="status-label">状態:</span>
+      <span id="workerStatus">Worker 未初期化</span>
+    </div>
+    <div class="status-item">
+      <span class="status-label">WASM初期化時間:</span>
+      <span id="initTime">-</span>
+    </div>
+    <div class="status-item">
+      <span class="status-label">isready応答時間:</span>
+      <span id="readyTime">-</span>
+    </div>
+    <div class="status-item">
+      <span class="status-label">go movetime実測時間:</span>
+      <span id="thinkTime">-</span>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button id="btnInit" onclick="initWorker()">Worker初期化</button>
+    <button id="btnUsi" onclick="sendUsi()" disabled>usi</button>
+    <button id="btnIsready" onclick="sendIsready()" disabled>isready</button>
+    <button id="btnUsinewgame" onclick="sendUsinewgame()" disabled>usinewgame</button>
+    <button id="btnPosition" onclick="sendPositionStartpos()" disabled>position startpos</button>
+    <button id="btnGo" onclick="sendGo()" disabled>go movetime 1000</button>
+    <button id="btnMultiPV" onclick="testMultiPV()" disabled>MultiPVテスト</button>
+    <button id="btnQuit" onclick="sendQuit()" disabled>quit</button>
+  </div>
+
+  <div id="output"></div>
+
+  <script>
+    let worker = null;
+    let initStartTime = null;
+    let readyStartTime = null;
+    let thinkStartTime = null;
+
+    function log(message, className = '') {
+      const output = document.getElementById('output');
+      const line = document.createElement('div');
+      line.className = className;
+      line.textContent = message;
+      output.appendChild(line);
+      output.scrollTop = output.scrollHeight;
+      console.log(message);
+    }
+
+    function initWorker() {
+      if (worker) {
+        log('Workerは既に初期化されています', 'log-error');
+        return;
+      }
+
+      initStartTime = performance.now();
+
+      try {
+        worker = new Worker('worker.js');
+
+        worker.onmessage = function(e) {
+          const data = e.data;
+          const currentTime = performance.now();
+
+          if (data.type === 'log') {
+            log(data.message, 'log-usi');
+          } else if (data.type === 'readyok') {
+            const elapsed = (currentTime - readyStartTime).toFixed(2);
+            document.getElementById('readyTime').textContent = elapsed + 'ms';
+            log('readyok (応答時間: ' + elapsed + 'ms)', 'log-info');
+            enableButtons(['btnUsinewgame', 'btnPosition', 'btnGo', 'btnMultiPV']);
+          } else if (data.type === 'bestmove') {
+            const elapsed = (currentTime - thinkStartTime).toFixed(2);
+            document.getElementById('thinkTime').textContent = elapsed + 'ms';
+            log('bestmove: ' + data.move + ' (思考時間: ' + elapsed + 'ms)', 'log-bestmove');
+          } else if (data.type === 'info') {
+            log(data.message, 'log-info');
+          } else if (data.type === 'initialized') {
+            const elapsed = (currentTime - initStartTime).toFixed(2);
+            document.getElementById('initTime').textContent = elapsed + 'ms';
+            document.getElementById('workerStatus').textContent = 'Worker 初期化完了';
+            log('WASM初期化完了 (時間: ' + elapsed + 'ms)', 'log-info');
+            enableButtons(['btnUsi']);
+          } else if (data.type === 'usiok') {
+            log('usiok', 'log-info');
+            enableButtons(['btnIsready']);
+          } else if (data.type === 'error') {
+            log('ERROR: ' + data.message, 'log-error');
+          }
+        };
+
+        worker.onerror = function(error) {
+          // エラーの詳細を取得
+          const errorMsg = error.message || error.toString || 'Unknown error';
+          const filename = error.filename || '';
+          const lineno = error.lineno || '';
+          const colno = error.colno || '';
+          log(`Worker Error: ${errorMsg} (${filename}:${lineno}:${colno})`, 'log-error');
+          console.error('Worker error details:', error);
+        };
+
+        log('Workerを初期化中...', 'log-info');
+      } catch (e) {
+        log('Worker初期化失敗: ' + e.message, 'log-error');
+        console.error(e);
+      }
+    }
+
+    function enableButtons(buttonIds) {
+      buttonIds.forEach(id => {
+        document.getElementById(id).disabled = false;
+      });
+    }
+
+    function sendUsi() {
+      worker.postMessage({ type: 'command', command: 'usi' });
+    }
+
+    function sendIsready() {
+      readyStartTime = performance.now();
+      worker.postMessage({ type: 'command', command: 'isready' });
+    }
+
+    function sendUsinewgame() {
+      worker.postMessage({ type: 'command', command: 'usinewgame' });
+    }
+
+    function sendPositionStartpos() {
+      worker.postMessage({ type: 'command', command: 'position startpos' });
+    }
+
+    function sendGo() {
+      thinkStartTime = performance.now();
+      worker.postMessage({ type: 'command', command: 'go movetime 1000' });
+    }
+
+    function testMultiPV() {
+      log('MultiPVテスト開始...', 'log-info');
+      worker.postMessage({ type: 'command', command: 'setoption name MultiPV value 3' });
+      setTimeout(() => {
+        worker.postMessage({ type: 'command', command: 'position startpos' });
+        setTimeout(() => {
+          thinkStartTime = performance.now();
+          worker.postMessage({ type: 'command', command: 'go movetime 1000' });
+        }, 100);
+      }, 100);
+    }
+
+    function sendQuit() {
+      worker.postMessage({ type: 'command', command: 'quit' });
+      document.getElementById('workerStatus').textContent = 'Worker 終了';
+      disableAllButtons();
+      worker = null;
+    }
+
+    function disableAllButtons() {
+      const buttons = document.querySelectorAll('button:not(#btnInit)');
+      buttons.forEach(btn => btn.disabled = true);
+    }
+
+    // ページ読み込み時のメッセージ
+    log('マイルストーン0 WASM検証環境', 'log-info');
+    log('arashigaoka/YaneuraOu.wasm v0.1.2（技術検証用）', 'log-info');
+    log('「Worker初期化」ボタンを押してください', 'log-info');
+  </script>
+</body>
+</html>

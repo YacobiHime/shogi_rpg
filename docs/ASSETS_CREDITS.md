@@ -51,6 +51,39 @@
 - 使用箇所: ブラウザ内での将棋AI実行（Web Worker）
 - 追加日: （記入）
 
+### YaneuraOu.wasm（mizar版、検証失敗・採用見送り）
+
+- 種別: 将棋AIエンジン（WASMビルド）
+- 入手元URL: https://github.com/mizar/YaneuraOu.wasm/releases/tag/v7.6.3-alpha.0
+- Releaseファイル: Suisho5-YaneuraOu.wasm-v7.6.3-alpha.0-wasm.zip, SuishoPetite-YaneuraOu.wasm-v7.6.3-alpha.0-wasm.zip
+- 制作者: mizar 氏
+- ライセンス: **GPLv3**（元プロジェクトであるYaneuraOuのライセンスに準拠）
+- 評価関数: 水匠5 (Suisho5) HalfKP NNUE、SuishoPetite k-p NNUE
+- **検証結果**: 採用見送り
+  - mizar版のWASMビルドはPThread（マルチスレッド）を使用しており、SharedArrayBufferが必須
+  - COOP/COEPヘッダーを設定してもSharedArrayBufferが有効にならず、WASM初期化に失敗
+  - Chromeの機能フラグ（Experimental WebAssembly features）でも解決せず
+  - 技術検証の目的を達成するため、arashigaoka版（シングルスレッド版）に戻した
+- **重要**: mizar版の使用はM0技術検証の試行に過ぎず、本番採用を意味するものではありません
+- 表記要否: 要（検証失敗の記録として残す）
+- 使用箇所: 検証のみで本番配布には組み込まない
+- 検証日: 2026-07-11
+- 結果: 失敗（SharedArrayBuffer/PThread問題により採用見送り）
+
+### YaneuraOu.wasm（arashigaoka版、M0技術検証用）
+
+- 種別: 将棋AIエンジン（WASMビルド）
+- 入手元URL: https://www.npmjs.com/package/yaneuraou.wasm（npmパッケージ、v0.1.2）
+- 制作者: arashigaoka 氏（Yuta Okumura、yaneurao/YaneuraOuのフォーク）
+- ライセンス: **GPL-3.0**（確認済み。npmパッケージのpackage.jsonおよびREADME.mdより確認）
+- 評価関数: k-p-256-32-32（軽量版、yaneurao/YaneuraOu 2019/01/15リリース）
+- **重要**: これはマイルストーン0の技術検証（WASM実行・Web Worker通信・USIプロトコル・速度計測）のための一時的な使用であり、arashigaoka版に同梱されている評価関数(k-p-256-32-32)を本番配布用の評価関数として採用するものではありません
+- **mizar版検証失敗による採用**: mizar版がSharedArrayBuffer/PThread問題で動作しなかったため、技術検証目的でarashigaoka版（シングルスレッド版）を使用
+- 本番評価関数は引き続き「水匠5」「Hao（Háo）」「リゼロ評価関数」から検討する
+- 表記要否: 要（検証専用ツールとしての記録。本番配布には組み込まない）
+- 使用箇所: /tools/m0-verification/ 配下での技術検証用
+- 追加日: 2026-07-11
+
 ## 評価関数（NNUEファイル）
 
 ### リゼロ評価関数

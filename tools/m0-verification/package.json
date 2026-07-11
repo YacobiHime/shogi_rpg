@@ -1,0 +1,16 @@
+{
+  "name": "m0-verification",
+  "version": "1.0.0",
+  "description": "マイルストーン0「技術検証」のためのYaneuraOu WASM検証環境です。",
+  "main": "worker.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "yaneuraou.wasm": "^0.1.2"
+  }
+}

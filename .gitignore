@@ -22,6 +22,16 @@ ShogiAI/Shinden3/*.exe
 # ローカル検証専用ディレクトリ（gitで管理しない実験用置き場）
 /local-only/
 
+# --- M0技術検証用WASMファイル ---
+# arashigaoka/YaneuraOu.wasm v0.1.2 のバイナリファイル
+# 検証用として tools/m0-verification/ 配下に配置するが、リポジトリにはコミットしない
+tools/m0-verification/*.js
+tools/m0-verification/*.wasm
+tools/m0-verification/*.data
+# 検証用HTML/JSはコミット対象とする
+!tools/m0-verification/index.html
+!tools/m0-verification/worker.js
+
 # --- 大容量バイナリの誤コミット防止（評価関数ファイル全般） ---
 # 使用許可済みの評価関数（水匠5・Hao・リゼロ）は ShogiAI/*/eval/ 配下で明示的に管理
 # それ以外の *.bin の誤コミットを防ぐ
