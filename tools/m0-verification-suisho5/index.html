@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>M0 WASM検証（メインスレッド版） - YaneuraOu</title>
+  <title>M0 WASM検証（メインスレッド版） - Suisho5(HalfKP noeval)</title>
   <style>
     body {
       margin: 0;
@@ -57,9 +57,9 @@
   </style>
 </head>
 <body>
-  <h1>マイルストーン0: WASM検証環境（メインスレッド直接版）</h1>
+  <h1>マイルストーン0: WASM検証環境（Suisho5 HalfKP noeval、メインスレッド直接版）</h1>
   <p class="note">
-    選択肢A: Web Workerを介さず、メインスレッドから直接YaneuraOu()を呼び出す構成。<br>
+    選択肢A: Web Workerを介さず、メインスレッドから直接YaneuraOu_HalfKP_noeval()を呼び出す構成。<br>
     エンジン内部はpthreadで既にマルチスレッド化されているため、思考自体はサブスレッドで実行される想定。
     UIスレッドのブロック具合をここで実測する。
   </p>
@@ -106,7 +106,7 @@
   <div id="output"></div>
 
   <!-- メインスレッドで直接読み込み -->
-  <script src="yaneuraou.js"></script>
+  <script src="yaneuraou.halfkp.noeval.js"></script>
   <script>
     let engine = null;
     let initStartTime = null;
@@ -167,21 +167,44 @@
       initStartTime = performance.now();
       log('エンジンを初期化中...', 'log-info');
 
-      YaneuraOu().then(function(instance) {
-        engine = instance;
-        const elapsed = (performance.now() - initStartTime).toFixed(2);
-        document.getElementById('initTime').textContent = elapsed + 'ms';
-        document.getElementById('engineStatus').textContent = '初期化完了';
-        log('WASM初期化完了 (時間: ' + elapsed + 'ms)', 'log-info');
+      // nn.bin（評価関数）を先にfetchしておく。
+      // PThreadビルドでは、モジュール初期化後に書き込むと内部のプロキシ先スレッドから
+      // ファイルが見えないため、preRunフックで初期化完了前に書き込む必要がある。
+      log('nn.bin を取得中...', 'log-info');
+      const evalStart = performance.now();
+      fetch('nn.bin').then(function(res) {
+        if (!res.ok) throw new Error('nn.bin の取得に失敗: HTTP ' + res.status);
+        return res.arrayBuffer();
+      }).then(function(buf) {
+        const evalElapsed = (performance.now() - evalStart).toFixed(2);
+        log('nn.bin 取得完了 (' + (buf.byteLength / 1024 / 1024).toFixed(2) + 'MB, ' + evalElapsed + 'ms)', 'log-info');
+        const nnBytes = new Uint8Array(buf);
 
-        engine.addMessageListener(function(line) {
-          handleEngineOutput(line);
+        YaneuraOu_HalfKP_noeval({
+          preRun: [function(mod) {
+            mod.FS.writeFile('/nn.bin', nnBytes);
+            log('nn.bin を初期化前に仮想ファイルシステムへ書き込み完了（preRun）', 'log-info');
+          }]
+        }).then(function(instance) {
+          engine = instance;
+          const elapsed = (performance.now() - initStartTime).toFixed(2);
+          document.getElementById('initTime').textContent = elapsed + 'ms';
+          document.getElementById('engineStatus').textContent = '初期化完了';
+          log('WASM初期化完了 (時間: ' + elapsed + 'ms)', 'log-info');
+
+          engine.addMessageListener(function(line) {
+            handleEngineOutput(line);
+          });
+
+          log('> usi', 'log-usi');
+          engine.postMessage('usi');
+        }).catch(function(e) {
+          log('初期化失敗: ' + e.message, 'log-error');
+          console.error(e);
+          document.getElementById('btnInit').disabled = false;
         });
-
-        log('> usi', 'log-usi');
-        engine.postMessage('usi');
       }).catch(function(e) {
-        log('初期化失敗: ' + e.message, 'log-error');
+        log('nn.bin 読み込みエラー: ' + e.message, 'log-error');
         console.error(e);
         document.getElementById('btnInit').disabled = false;
       });
