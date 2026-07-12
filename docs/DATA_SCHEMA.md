@@ -120,12 +120,14 @@
 - 合計 80 bit 程度。Base32相当のエンコードで英数字16文字前後の文字列になる想定
 - 実装時は `unlocked_formations` / `defeated_bosses` のビット数を実際のマスタデータ件数に合わせて調整する
 
-## 9. USI通信メッセージ（Web Worker ⇔ メインスレッド）
+## 9. USI通信メッセージ（対局UI ⇔ 将棋AIエンジン）
 
-対局UI・Web Worker間はUSIプロトコルのテキストコマンドをそのまま利用する。
+対局UI・将棋AIエンジン間はUSIプロトコルのテキストコマンドをそのまま利用する。
+エンジンは**メインスレッドから直接呼び出す方式**（`docs/CLAUDE.md`参照）で、
+`engine.postMessage()` / `engine.addMessageListener()` を介してやり取りする。
 
 ```
-// メインスレッド → Worker
+// 対局UI → エンジン（engine.postMessage）
 "usi"
 "isready"
 "setoption name Threads value 1"
@@ -133,7 +135,7 @@
 "position sfen <SFEN> moves <指し手...>"
 "go movetime <ms>" もしくは "go nodes <n>"
 
-// Worker → メインスレッド
+// エンジン → 対局UI（addMessageListenerのコールバック）
 "usiok"
 "readyok"
 "bestmove <指し手>"

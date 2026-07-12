@@ -14,9 +14,9 @@
   │     - 盤面描画・駒移動・成り選択・持ち駒UI
   │     - 対局の開始局面組み立て（戦形・駒落ち適用後のSFEN生成）
   │     - ヒント／待ったの実行、残数管理
-  │     - Web Workerとの通信（指し手の送受信）
+  │     - エンジン（メインスレッド直接呼び出し）との通信（指し手の送受信）
   │
-  ├─ 将棋AIエンジン層（Web Worker内で実行）
+  ├─ 将棋AIエンジン層（メインスレッドから直接実行。詳細は下記5章、`docs/CLAUDE.md`参照）
   │     - YaneuraOu.wasm（USIプロトコル）
   │     - 敵データに応じたエンジンオプション設定
   │       （思考時間 / ノード数制限 / MultiPV による次善手選択 等）
@@ -40,18 +40,23 @@
   - b) 対局UIを別ページとして実装し、`iframe` 埋め込み or 別画面遷移 + `postMessage` で結果を返す
   - 開発初期は b) の疎結合構成で進め、UXの問題が出れば a) に寄せる方針を推奨（対局部分の独立したテストがしやすいため）
 
-### 2.2 対局UI ⇔ 将棋AIエンジン（Web Worker）
+### 2.2 対局UI ⇔ 将棋AIエンジン
 
-- 対局UIはメインスレッドで動作し、AI思考は必ず Web Worker 内の YaneuraOu.wasm に委譲する（メインスレッドをブロックしないため）
-- 通信は USI プロトコルのテキストコマンドをそのまま `postMessage` でやり取りする方式を基本とする
+- **M0技術検証の結果、Web Worker内からYaneuraOu.wasmを呼び出す構成（入れ子Worker）は動作しないことが判明したため、
+  メインスレッドから直接YaneuraOu.wasmを呼び出す方式を正式採用する**（詳細・実装パターンは`docs/CLAUDE.md`
+  「WASM将棋エンジン統合時の必須知識」を参照）。エンジン自体が内部でPThread化されているため、
+  UIブロックは実測上問題ないレベルであることを確認済み
+- 通信は USI プロトコルのテキストコマンドをそのまま、エンジンモジュールの`postMessage()`/
+  `addMessageListener()` APIでやり取りする方式を基本とする（Web WorkerのpostMessageとは別物、
+  エンジン側WASMモジュールが提供するAPI名が同じだけなので混同注意）
 
 ```js
-// メインスレッド → Worker
-worker.postMessage("position sfen " + currentSfen);
-worker.postMessage("go movetime " + enemyConfig.thinkTimeMs);
+// 対局UI → エンジン
+engine.postMessage("position sfen " + currentSfen);
+engine.postMessage("go movetime " + enemyConfig.thinkTimeMs);
 
-// Worker → メインスレッド
-// "bestmove 7g7f" 等のUSI出力をそのまま送り返す
+// エンジン → 対局UI（addMessageListenerのコールバックで受信）
+// "bestmove 7g7f" 等のUSI出力をそのまま受け取る
 ```
 
 ### 2.3 敵の強さ制御パラメータ
@@ -184,8 +189,13 @@ const DIFFICULTY_MODIFIERS = {
 
 ### 5.3 パフォーマンス上の注意
 
-- Web Worker上での実行を必須とし、メインスレッド（UI描画）をブロックしない
+- **（訂正、2026-07-12）** 当初「Web Worker上での実行を必須」としていたが、M0検証の結果、
+  メインスレッドから直接呼び出す方式を正式採用した（2.2節参照）。エンジン内部が既にPThreadで
+  マルチスレッド化されているため、この方式でもUI描画のブロックは実測上ごく僅か（理論値16.7msに対し
+  実測17〜18ms程度）で、実用上問題ないことを確認済み
 - 評価関数ファイルは章が進むごとに都度フェッチし、初回ロード時に全ファイルを読み込ませない
+- 本番評価関数（水匠5・hao、各64MB程度）は`isready`応答（内部での解析処理）に約1.3〜1.4秒かかることを確認済み。
+  対局開始時のローディングUIで吸収する設計とする
 - スマートフォンでの動作速度は別途検証が必要（努力目標）
 
 ## 6. 開発用ツールの位置づけ（cshogi / python-shogi）

@@ -26,7 +26,7 @@ Conventional Commits に準拠します。
 feat: 敵AIの思考時間パラメータを実装
 fix: 待った機能で持ち駒が正しく戻らない不具合を修正
 docs: システム設計書に復活の呪文の仕様を追記
-refactor: 対局UIのWorker通信部分を整理
+refactor: 対局UIのエンジン通信部分を整理
 chore: 依存ライブラリの更新
 ```
 
@@ -56,7 +56,7 @@ chore: 依存ライブラリの更新
 
 ```
 /data          … 敵・戦形・アイテム等のマスタデータ（JSON）
-/src/engine    … Web Worker / USI通信まわり
+/src/engine    … 将棋AIエンジン（メインスレッド直接呼び出し）/ USI通信まわり
 /src/board-ui  … 対局UI
 /src/save      … セーブ・復活の呪文まわり
 /src/novel     … ティラノスクリプト連携
