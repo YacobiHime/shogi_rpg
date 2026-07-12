@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>M0 WASM検証（メインスレッド版） - YaneuraOu</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      font-family: 'Consolas', 'Monaco', monospace;
+      background: #1e1e1e;
+      color: #d4d4d4;
+    }
+    h1 { color: #4ec9b0; margin-bottom: 10px; }
+    .note { color: #ce9178; margin-bottom: 15px; }
+    .status {
+      margin-bottom: 20px;
+      padding: 10px;
+      background: #2d2d2d;
+      border-radius: 4px;
+    }
+    .status-item { margin: 5px 0; }
+    .status-label { color: #569cd6; font-weight: bold; }
+    #output {
+      background: #252526;
+      padding: 15px;
+      border-radius: 4px;
+      max-height: 500px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      font-size: 13px;
+      line-height: 1.4;
+    }
+    .log-usi { color: #ce9178; }
+    .log-info { color: #6a9955; }
+    .log-bestmove { color: #dcdcaa; font-weight: bold; }
+    .log-error { color: #f48771; }
+    button {
+      background: #0e639c;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      margin: 5px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    button:hover { background: #1177bb; }
+    button:disabled { background: #3a3a3a; cursor: not-allowed; }
+    .controls {
+      margin: 20px 0;
+      padding: 15px;
+      background: #2d2d2d;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <h1>マイルストーン0: WASM検証環境（メインスレッド直接版）</h1>
+  <p class="note">
+    選択肢A: Web Workerを介さず、メインスレッドから直接YaneuraOu()を呼び出す構成。<br>
+    エンジン内部はpthreadで既にマルチスレッド化されているため、思考自体はサブスレッドで実行される想定。
+    UIスレッドのブロック具合をここで実測する。
+  </p>
+
+  <div class="status">
+    <div class="status-item">
+      <span class="status-label">crossOriginIsolated:</span>
+      <span id="coiStatus">-</span>
+    </div>
+    <div class="status-item">
+      <span class="status-label">状態:</span>
+      <span id="engineStatus">未初期化</span>
+    </div>
+    <div class="status-item">
+      <span class="status-label">WASM初期化時間:</span>
+      <span id="initTime">-</span>
+    </div>
+    <div class="status-item">
+      <span class="status-label">isready応答時間:</span>
+      <span id="readyTime">-</span>
+    </div>
+    <div class="status-item">
+      <span class="status-label">go movetime実測時間:</span>
+      <span id="thinkTime">-</span>
+    </div>
+    <div class="status-item">
+      <span class="status-label">UIブロック計測（思考中の入力遅延）:</span>
+      <span id="uiBlockStatus">-</span>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button id="btnInit" onclick="initEngine()">エンジン初期化</button>
+    <button id="btnIsready" onclick="sendIsready()" disabled>isready</button>
+    <button id="btnUsinewgame" onclick="sendUsinewgame()" disabled>usinewgame</button>
+    <button id="btnPosition" onclick="sendPositionStartpos()" disabled>position startpos</button>
+    <button id="btnGo" onclick="sendGo()" disabled>go movetime 1000</button>
+    <button id="btnGo3000" onclick="sendGo(3000)" disabled>go movetime 3000</button>
+    <button id="btnMultiPV" onclick="testMultiPV()" disabled>MultiPVテスト(3)</button>
+    <button id="btnPing" onclick="startUiPingTest()" disabled>UI応答性テスト開始</button>
+    <button id="btnQuit" onclick="sendQuit()" disabled>quit</button>
+  </div>
+
+  <div id="output"></div>
+
+  <!-- メインスレッドで直接読み込み -->
+  <script src="yaneuraou.js"></script>
+  <script>
+    let engine = null;
+    let initStartTime = null;
+    let readyStartTime = null;
+    let thinkStartTime = null;
+    let pingTimer = null;
+    let pingCount = 0;
+    let pingLastTime = null;
+    let pingMaxDelay = 0;
+
+    function log(message, className = '') {
+      const output = document.getElementById('output');
+      const line = document.createElement('div');
+      line.className = className;
+      line.textContent = message;
+      output.appendChild(line);
+      output.scrollTop = output.scrollHeight;
+      console.log(message);
+    }
+
+    function enableButtons(ids) {
+      ids.forEach(id => { document.getElementById(id).disabled = false; });
+    }
+
+    document.getElementById('coiStatus').textContent = self.crossOriginIsolated;
+    log('マイルストーン0 WASM検証環境（メインスレッド版）', 'log-info');
+    log('crossOriginIsolated: ' + self.crossOriginIsolated, 'log-info');
+    log('「エンジン初期化」ボタンを押してください', 'log-info');
+
+    function handleEngineOutput(line) {
+      if (line === 'readyok') {
+        const elapsed = (performance.now() - readyStartTime).toFixed(2);
+        document.getElementById('readyTime').textContent = elapsed + 'ms';
+        log('readyok (応答時間: ' + elapsed + 'ms)', 'log-info');
+        enableButtons(['btnUsinewgame', 'btnPosition', 'btnGo', 'btnGo3000', 'btnMultiPV']);
+      } else if (line === 'usiok') {
+        log('usiok', 'log-info');
+        enableButtons(['btnIsready']);
+      } else if (line.startsWith('bestmove')) {
+        const parts = line.split(' ');
+        const move = parts[1] || 'resign';
+        const elapsed = (performance.now() - thinkStartTime).toFixed(2);
+        document.getElementById('thinkTime').textContent = elapsed + 'ms';
+        log('bestmove: ' + move + ' (思考時間: ' + elapsed + 'ms)', 'log-bestmove');
+      } else if (line.startsWith('info')) {
+        log(line, 'log-info');
+      } else {
+        log(line, 'log-usi');
+      }
+    }
+
+    function initEngine() {
+      if (engine) {
+        log('エンジンは既に初期化されています', 'log-error');
+        return;
+      }
+      document.getElementById('btnInit').disabled = true;
+      initStartTime = performance.now();
+      log('エンジンを初期化中...', 'log-info');
+
+      YaneuraOu().then(function(instance) {
+        engine = instance;
+        const elapsed = (performance.now() - initStartTime).toFixed(2);
+        document.getElementById('initTime').textContent = elapsed + 'ms';
+        document.getElementById('engineStatus').textContent = '初期化完了';
+        log('WASM初期化完了 (時間: ' + elapsed + 'ms)', 'log-info');
+
+        engine.addMessageListener(function(line) {
+          handleEngineOutput(line);
+        });
+
+        log('> usi', 'log-usi');
+        engine.postMessage('usi');
+      }).catch(function(e) {
+        log('初期化失敗: ' + e.message, 'log-error');
+        console.error(e);
+        document.getElementById('btnInit').disabled = false;
+      });
+    }
+
+    function sendIsready() {
+      readyStartTime = performance.now();
+      log('> isready', 'log-usi');
+      engine.postMessage('isready');
+    }
+
+    function sendUsinewgame() {
+      log('> usinewgame', 'log-usi');
+      engine.postMessage('usinewgame');
+    }
+
+    function sendPositionStartpos() {
+      log('> position startpos', 'log-usi');
+      engine.postMessage('position startpos');
+    }
+
+    function sendGo(movetime) {
+      movetime = movetime || 1000;
+      thinkStartTime = performance.now();
+      log('> go movetime ' + movetime, 'log-usi');
+      engine.postMessage('go movetime ' + movetime);
+      // 思考中にUIが固まっていないか簡易確認
+      enableButtons(['btnPing']);
+    }
+
+    function testMultiPV() {
+      log('MultiPVテスト開始...', 'log-info');
+      engine.postMessage('setoption name MultiPV value 3');
+      setTimeout(() => {
+        engine.postMessage('position startpos');
+        setTimeout(() => {
+          thinkStartTime = performance.now();
+          log('> go movetime 1000 (MultiPV=3)', 'log-usi');
+          engine.postMessage('go movetime 1000');
+        }, 100);
+      }, 100);
+    }
+
+    // UI応答性テスト:
+    // 思考中(go movetime 3000など)にこのボタンを押すと、
+    // 100msごとのrequestAnimationFrameの遅延を計測してUIブロック具合を可視化する
+    function startUiPingTest() {
+      pingCount = 0;
+      pingMaxDelay = 0;
+      pingLastTime = performance.now();
+      document.getElementById('uiBlockStatus').textContent = '計測中...';
+      log('UI応答性テスト開始（rafの遅延を計測）', 'log-info');
+
+      function tick() {
+        const now = performance.now();
+        const delay = now - pingLastTime;
+        pingLastTime = now;
+        pingCount++;
+        if (delay > pingMaxDelay) pingMaxDelay = delay;
+
+        if (pingCount < 100) {
+          requestAnimationFrame(tick);
+        } else {
+          document.getElementById('uiBlockStatus').textContent =
+            '最大遅延: ' + pingMaxDelay.toFixed(2) + 'ms（理論値は約16.7ms、これより大きいほどUIがブロックされている）';
+          log('UI応答性テスト完了。最大フレーム間隔: ' + pingMaxDelay.toFixed(2) + 'ms', 'log-info');
+        }
+      }
+      requestAnimationFrame(tick);
+    }
+
+    function sendQuit() {
+      engine.postMessage('quit');
+      document.getElementById('engineStatus').textContent = '終了';
+      document.querySelectorAll('button:not(#btnInit)').forEach(b => b.disabled = true);
+      engine = null;
+      document.getElementById('btnInit').disabled = false;
+    }
+  </script>
+</body>
+</html>
