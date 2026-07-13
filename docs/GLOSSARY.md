@@ -1,3 +1,9 @@
+---
+title: 用語集
+layout: default
+nav_order: 6
+---
+
 # 用語集 (GLOSSARY)
 
 将棋用語とゲーム内用語の対応・簡単な解説をまとめます。将棋に詳しくない協力者や、

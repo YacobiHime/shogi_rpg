@@ -1,3 +1,9 @@
+---
+title: 素材・クレジット台帳
+layout: default
+nav_order: 9
+---
+
 # ASSETS / CREDITS
 
 本プロジェクトで使用する外部素材・ソフトウェア（画像・音声・エンジン・評価関数等）と、

@@ -1,12 +1,21 @@
 title: 将棋RPG 開発Wiki
 description: 将棋RPG (shogi_rpg) 開発者向けドキュメント
-theme: jekyll-theme-cayman
+
+# サイドバーナビゲーション・検索機能付きテーマ
+remote_theme: just-the-docs/just-the-docs
 
 # .md へのリンク (例: [システム設計書](./SYSTEM_DESIGN.md)) を
 # ビルド後も正しく機能するリンクに変換するためのプラグイン
+# (jekyll-remote-theme は remote_theme を使うために必須)
 plugins:
+  - jekyll-remote-theme
   - jekyll-relative-links
 
 # 誤って全ファイルがビルド対象から除外されないための明示的include
 include:
   - README.md
+
+# just-the-docs 用オプション
+search_enabled: true
+nav_sort: case_insensitive
+heading_anchors: true

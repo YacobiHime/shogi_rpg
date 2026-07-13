@@ -1,3 +1,9 @@
+---
+title: 変更履歴
+layout: default
+nav_order: 7
+---
+
 # CHANGELOG
 
 このプロジェクトの意思決定・進捗をマイルストーン単位で記録します。

@@ -1,3 +1,9 @@
+---
+title: システム設計書
+layout: default
+nav_order: 2
+---
+
 # システム設計書
 
 ## 1. 全体アーキテクチャ

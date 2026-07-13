@@ -1,3 +1,9 @@
+---
+title: プロジェクト計画書
+layout: default
+nav_order: 3
+---
+
 # システム設計書
 
 ## 1. 全体アーキテクチャ

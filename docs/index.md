@@ -1,3 +1,9 @@
+---
+title: ホーム
+layout: default
+nav_order: 1
+---
+
 # 将棋RPG (shogi_rpg)
 
 将棋の対局そのものをコアバトルシステムとして扱うブラウザ向けRPG。

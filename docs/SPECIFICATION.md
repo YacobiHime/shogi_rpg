@@ -1,3 +1,9 @@
+---
+title: 仕様書
+layout: default
+nav_order: 4
+---
+
 # 仕様書
 
 ## 1. ゲーム概要

@@ -1,3 +1,9 @@
+---
+title: 行動規範
+layout: default
+nav_order: 10
+---
+
 # 行動規範 (CODE OF CONDUCT)
 
 本プロジェクトは、将来的に外部からのコントリビューションを受け入れる可能性があるOSSプロジェクトです。
