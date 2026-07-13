@@ -145,7 +145,41 @@ nav_order: 7
 
 ### 未着手
 
-- マイルストーン1以降は未着手（M0完了を受けて次に着手予定）
+- マイルストーン2以降は未着手
+
+---
+
+## [Unreleased] マイルストーン1: 対局UIの最小構成（着手）
+
+### Added
+- `src/engine/engine.js`: USI通信ラッパー（`tools/m0-verification/index-mainthread.html`の
+  `initEngine()`パターンを移植。メインスレッド直接呼び出し方式）
+- `src/board-ui/board.js`: 盤面描画・駒移動UI（ルール判定は`shogi.js`(na2hiro, MIT)に委譲）
+- `src/board-ui/main.js`: 対局UIとエンジンを繋ぐ最小ゲームループ（人間・先手 vs エンジン・後手）
+- `src/board-ui/index.html`: 検証用ページ
+
+### Changed
+- `docs/PROJECT_PLAN.md`: 内容が`SYSTEM_DESIGN.md`と重複していた不具合を修正し、
+  実際のマイルストーン計画（M0〜M5）を記載
+
+### Notes
+- 盤面ライブラリの選定: 既存の将棋盤JSライブラリを調査した結果、`shogi.js`
+  （na2hiro/Kifu-for-JSモノレポ内、MIT license）を**ルールエンジンとして**採用。
+  盤面の見た目（SVG描画）は自作する方針（README記載の技術スタック方針通り）。
+  `kifu-for-js`自体はReact/MobX/react-dnd前提のため、本プロジェクトの
+  素のJS/ティラノスクリプト構成には不採用とした
+- `board.js`内の`shogi.js`API呼び出し箇所は、正式なTypeDocドキュメントでの
+  確認が必要な暫定実装（`// TODO`コメントで明記）。実装を進める際は
+  `src/board-ui/README.md`のセットアップ手順を参照し、API仕様を突き合わせること
+- USI指し手文字列（`7g7f`, `P*5e`等）を盤面へ反映する`applyUsiMove()`は未実装。
+  次の作業で優先的に対応する
+
+### 未着手（M1内の残タスク）
+- `applyUsiMove()`の実装（エンジンの指し手を盤面に反映）
+- 成り／不成り選択UI（仮の`window.confirm`から差し替え）
+- 持ち駒を打つ操作のUI改善
+- 投了ボタン・詰み判定後の結果画面
+- 駒・盤の画像素材（現状は暫定のテキスト表示）
 
 ---
 

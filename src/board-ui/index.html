@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>将棋RPG - M1対局UI検証</title>
+<style>
+  body { font-family: sans-serif; background: #222; color: #eee; }
+  #status { font-size: 18px; margin: 12px; }
+  #board-container { max-width: 560px; margin: 0 auto; }
+</style>
+</head>
+<body>
+  <h1>M1: 対局UI最小構成（検証用）</h1>
+  <div id="status">読み込み中...</div>
+  <div id="board-container"></div>
+
+  <!--
+    エンジンのWASMローダー。tools/m0-verification/README.md の手順で
+    node_modules/yaneuraou.wasm/ からコピーしたものをここに置く想定。
+    (yaneuraou.js を読み込むとグローバルに window.YaneuraOu が生える)
+  -->
+  <script src="./vendor/yaneuraou.js"></script>
+  <script type="module" src="./main.js"></script>
+</body>
+</html>
