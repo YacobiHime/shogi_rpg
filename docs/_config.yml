@@ -15,6 +15,14 @@ plugins:
 include:
   - README.md
 
+# Wiki公開対象外のファイル（GitHub運用テンプレート／Claude Code用設定）
+exclude:
+  - bug_report.md
+  - feature_request.md
+  - PULL_REQUEST_TEMPLATE.md
+  - CLAUDE.md
+  - SKILL.md
+
 # just-the-docs 用オプション
 search_enabled: true
 nav_sort: case_insensitive
