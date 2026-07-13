@@ -1,0 +1,12 @@
+title: 将棋RPG 開発Wiki
+description: 将棋RPG (shogi_rpg) 開発者向けドキュメント
+theme: jekyll-theme-cayman
+
+# .md へのリンク (例: [システム設計書](./SYSTEM_DESIGN.md)) を
+# ビルド後も正しく機能するリンクに変換するためのプラグイン
+plugins:
+  - jekyll-relative-links
+
+# 誤って全ファイルがビルド対象から除外されないための明示的include
+include:
+  - README.md
