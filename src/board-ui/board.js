@@ -20,6 +20,7 @@
 // TypeScriptの型としてのみ存在するため実行時オブジェクトとしてimportできない。
 import shogiLib from './vendor/shogi.esm.js';
 import { isLegalDrop, isLegalMove } from './legal-moves.mjs';
+import { getLegalDestinations } from './selection-highlights.mjs';
 const { Shogi, Color, Piece, kindToString } = shogiLib;
 export { Color };
 
@@ -66,6 +67,7 @@ export class BoardView {
   render() {
     while (this.svg.firstChild) this.svg.removeChild(this.svg.firstChild);
     this._drawGrid();
+    this._drawSelectionHighlights();
     this._drawPieces();
     this._drawHands();
   }
@@ -138,16 +140,23 @@ export class BoardView {
   }
 
   _drawPieceAt(x, y, piece) {
+    const isSelected =
+      this.selected && !this.selected.hand &&
+      this.selected.x === x && this.selected.y === y;
     const { cx, cy } = this._cellCenter(x, y);
     const g = document.createElementNS(SVG_NS, 'g');
+    g.classList.add('board-piece');
+    if (isSelected) g.classList.add('selected-piece');
+    g.dataset.square = this._squareName(x, y);
     g.setAttribute('transform', `translate(${cx},${cy})${piece.color === Color.White ? ' rotate(180)' : ''}`);
     g.style.cursor = 'pointer';
     g.addEventListener('click', () => this._handleCellClick(x, y));
 
     const rect = document.createElementNS(SVG_NS, 'polygon');
     rect.setAttribute('points', '0,-24 18,16 -18,16');
-    rect.setAttribute('fill', '#f5deb3');
-    rect.setAttribute('stroke', '#000');
+    rect.setAttribute('fill', isSelected ? '#60a5fa' : '#f5deb3');
+    rect.setAttribute('stroke', isSelected ? '#0b3d91' : '#000');
+    rect.setAttribute('stroke-width', isSelected ? '3' : '1');
     g.appendChild(rect);
 
     const text = document.createElementNS(SVG_NS, 'text');
@@ -188,13 +197,17 @@ export class BoardView {
     const selectable = !this.locked && color === this.humanColor;
 
     const g = document.createElementNS(SVG_NS, 'g');
+    g.classList.add('hand-piece');
+    if (isSelected) g.classList.add('selected-piece');
+    g.dataset.kind = kind;
     g.setAttribute('transform', `translate(${cx},${cy})`);
     g.style.cursor = selectable ? 'pointer' : 'default';
 
     const shape = document.createElementNS(SVG_NS, 'polygon');
     shape.setAttribute('points', '0,-16 12,10 -12,10');
-    shape.setAttribute('fill', isSelected ? '#ffdd77' : '#f5deb3');
-    shape.setAttribute('stroke', '#000');
+    shape.setAttribute('fill', isSelected ? '#60a5fa' : '#f5deb3');
+    shape.setAttribute('stroke', isSelected ? '#0b3d91' : '#000');
+    shape.setAttribute('stroke-width', isSelected ? '3' : '1');
     g.appendChild(shape);
 
     const text = document.createElementNS(SVG_NS, 'text');
@@ -216,6 +229,45 @@ export class BoardView {
     this.svg.appendChild(g);
   }
 
+  _drawSelectionHighlights() {
+    if (!this.selected || this.locked || this.shogi.turn !== this.humanColor) return;
+
+    if (!this.selected.hand) {
+      this._drawSquareHighlight(
+        this.selected.x, this.selected.y, 'selected-square', '#2563eb', 0.38
+      );
+    }
+
+    const destinations = getLegalDestinations(
+      this.shogi, Shogi, this.selected, this.humanColor
+    );
+    destinations.forEach(({ x, y }) => {
+      this._drawSquareHighlight(x, y, 'legal-destination', '#22c55e', 0.42);
+    });
+  }
+
+  _drawSquareHighlight(x, y, className, color, opacity) {
+    const { cx, cy } = this._cellCenter(x, y);
+    const rect = document.createElementNS(SVG_NS, 'rect');
+    rect.classList.add(className);
+    rect.dataset.square = this._squareName(x, y);
+    rect.setAttribute('x', cx - CELL / 2 + 2);
+    rect.setAttribute('y', cy - CELL / 2 + 2);
+    rect.setAttribute('width', CELL - 4);
+    rect.setAttribute('height', CELL - 4);
+    rect.setAttribute('rx', '6');
+    rect.setAttribute('fill', color);
+    rect.setAttribute('fill-opacity', String(opacity));
+    rect.setAttribute('stroke', color);
+    rect.setAttribute('stroke-width', '3');
+    rect.setAttribute('pointer-events', 'none');
+    this.svg.appendChild(rect);
+  }
+
+  _squareName(x, y) {
+    return `${x}${String.fromCharCode('a'.charCodeAt(0) + y - 1)}`;
+  }
+
   /** 対局終了後に盤面クリックを無効化する */
   lock() {
     this.locked = true;
@@ -228,6 +280,7 @@ export class BoardView {
     if (this.selected && this.selected.hand) {
       this._tryDrop(this.selected.hand.color, this.selected.hand.kind, x, y);
       this.selected = null;
+      this.render();
       return;
     }
 
@@ -235,12 +288,14 @@ export class BoardView {
       const piece = this.shogi.get(x, y);
       if (piece && piece.color === this.humanColor) {
         this.selected = { x, y };
+        this.render();
       }
       return;
     }
 
     this._tryMove(this.selected.x, this.selected.y, x, y);
     this.selected = null;
+    this.render();
   }
 
   async _tryMove(fromX, fromY, toX, toY) {
