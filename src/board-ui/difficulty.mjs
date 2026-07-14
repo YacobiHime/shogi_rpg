@@ -1,6 +1,6 @@
 const DIFFICULTY_IDS = ['easy', 'normal', 'hard'];
 
-const DIFFICULTY_NAMES = {
+export const DIFFICULTY_NAMES = {
   easy: 'やさしい',
   normal: 'ふつう',
   hard: 'むずかしい',
