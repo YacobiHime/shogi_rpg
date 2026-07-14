@@ -25,7 +25,7 @@ nav_order: 2
   ├─ 将棋AIエンジン層（メインスレッドから直接実行。詳細は下記5章、`docs/CLAUDE.md`参照）
   │     - YaneuraOu.wasm（USIプロトコル）
   │     - 敵データに応じたエンジンオプション設定
-  │       （思考時間 / ノード数制限 / MultiPV による次善手選択 等）
+  │       （ノード数制限 / 最大思考時間 / MultiPV による次善手選択 等）
   │     - 評価関数（NNUEファイル）の動的ロード
   │
   └─ セーブ／進行管理層
@@ -59,7 +59,8 @@ nav_order: 2
 ```js
 // 対局UI → エンジン
 engine.postMessage("position sfen " + currentSfen);
-engine.postMessage("go movetime " + enemyConfig.thinkTimeMs);
+engine.postMessage("go nodes " + enemyConfig.nodeLimit);
+// maxThinkTimeMsを超えた場合は、応答不能を避けるため別途"stop"を送る
 
 // エンジン → 対局UI（addMessageListenerのコールバックで受信）
 // "bestmove 7g7f" 等のUSI出力をそのまま受け取る
@@ -72,22 +73,24 @@ engine.postMessage("go movetime " + enemyConfig.thinkTimeMs);
 | パラメータ | 説明 |
 |---|---|
 | `nnue_file` | 使用する評価関数ファイル（自由配布のもののみ） |
-| `think_time_ms` | 1手あたりの思考時間 |
-| `node_limit` | 探索ノード数の上限（設定できる場合） |
+| `max_think_time_ms` | 1手あたりの最大思考時間。極端に遅い端末向けの安全上限 |
+| `node_limit` | 探索ノード数の上限。端末性能差を抑えるため、敵の強さの主基準とする |
 | `move_rank` | MultiPVで得た候補手のうち何番目までからランダムに選ばせるか（次善手・N番目に有力な手のデバフ） |
 | `allowed_openings` | 敵が使用できる戦形（定跡データ）のリスト |
 | `handicap` | 駒落ち設定（飛車落ち・角落ち等） |
 
-プレイヤー側のスキル（敵の推論時間を短縮する等）は、対局開始時にこの設定値へ補正をかける形で実装する。
+プレイヤー側のスキル（敵の探索ノード数を減らす等）は、対局開始時にこの設定値へ補正をかける形で実装する。
+通常は`node_limit`まで探索させ、`max_think_time_ms`へ到達した場合だけ`stop`を送る。これにより、
+端末が高速なほど敵が強くなる問題を抑えつつ、低速端末で思考が終わらない事態を防ぐ。
 
 ```json
 {
   "enemy_id": "chapter1_boss",
   "nnue_file": "rezero_eval.bin",
-  "think_time_ms": 300,
-  "node_limit": null,
+  "max_think_time_ms": 10000,
+  "node_limit": 10000,
   "move_rank": { "min": 1, "max": 1 },
-  "allowed_openings": ["矢倉"],
+  "allowed_openings": ["standard"],
   "handicap": null
 }
 ```
@@ -98,9 +101,9 @@ engine.postMessage("go movetime " + enemyConfig.thinkTimeMs);
 
 ```js
 const DIFFICULTY_MODIFIERS = {
-  easy:   { thinkTimeMult: 0.5, moveRankMax: 3 },
-  normal: { thinkTimeMult: 1.0, moveRankMax: 1 },
-  hard:   { thinkTimeMult: 1.5, moveRankMax: 1 },
+  easy:   { nodeLimitMult: 0.5, moveRankMax: 3 },
+  normal: { nodeLimitMult: 1.0, moveRankMax: 1 },
+  hard:   { nodeLimitMult: 1.5, moveRankMax: 1 },
 };
 ```
 
@@ -129,7 +132,7 @@ const DIFFICULTY_MODIFIERS = {
   "handicap_given_to_enemy": null,
   "hints": { "used": 0, "max": 2 },
   "undo": { "used": 0, "max": 3 },
-  "enemy_debuff": "think_time_half"
+  "enemy_debuff": "node_limit_half"
 }
 ```
 
@@ -189,7 +192,7 @@ const DIFFICULTY_MODIFIERS = {
 ### 5.2 評価関数ファイル
 
 - 自由配布が明言されているもの（リゼロ評価関数など）のみを同梱する
-- 支援者限定配布の評価関数（水匠6以降等）は同梱不可のため、敵の強さの階層はエンジンオプション（思考時間・ノード数制限・MultiPVによる手のランク制御）の組み合わせで表現することを基本方針とする
+- 支援者限定配布の評価関数（水匠6以降等）は同梱不可のため、敵の強さの階層はエンジンオプション（ノード数制限を主軸とし、最大思考時間・MultiPVによる手のランク制御を補助とする）の組み合わせで表現することを基本方針とする
 - **配布物に含める評価関数は「水匠5」「Hao（Háo）」「リゼロ評価関数」の3種**に限定する（詳細は`ASSETS_CREDITS.md`参照）
 - **振電3（Shinden3）は暫定的に配布物へ含めない**。開発者本人が無償公開の意図を明言しているものの、正式なライセンス文書（再配布可否等の明文化）が存在しないため、開発者への直接確認が取れるまでローカル検証専用の扱いとする（対応方針は8章を参照）
 
@@ -209,7 +212,7 @@ const DIFFICULTY_MODIFIERS = {
 これらはブラウザ実行には使用せず、**開発時の補助ツール**として位置づける。
 
 - 戦形（完成局面）のSFENデータ作成・検証
-- 敵AIの強さパラメータ（思考時間・ノード数・手のランク）のチューニング時の対局シミュレーション
+- 敵AIの強さパラメータ（ノード数・最大思考時間・手のランク）のチューニング時の対局シミュレーション
 - 定跡データ・囲いの相性表を整理するための棋譜解析
 
 ## 8. 暫定的にライセンス保留となっている素材の取り扱い
@@ -223,7 +226,7 @@ const DIFFICULTY_MODIFIERS = {
   - `.gitignore` で該当パスを除外し、誤ってコミット・公開されることを防ぐ
   - WASMビルド対応コード（`source/eval/nnue/wasm_simd.h/cpp`、`Makefile`のWASMビルド設定）は評価関数本体とは別物であり、**ビルド手法の学習・検証目的でのソースコード参照は問題ない**（ソースコード自体のライセンスはGPLv3系のやねうら王本体に準ずる）。ただし同梱される`nn.bin`（学習済み重み）は上記の理由で配布不可
   - 開発者への利用許諾確認が取れ次第、`ASSETS_CREDITS.md`と本項目を更新し、正式に配布物へ組み込む
-- 確認が取れるまでの代替: 敵の強さの階層は「水匠5」「Hao（Háo）」「リゼロ評価関数」の3種＋エンジンオプション（思考時間・ノード数制限・MultiPV）の組み合わせで表現する（マイルストーン0〜2の実装はこの前提で進める）
+- 確認が取れるまでの代替: 敵の強さの階層は「水匠5」「Hao（Háo）」「リゼロ評価関数」の3種＋エンジンオプション（ノード数制限・最大思考時間・MultiPV）の組み合わせで表現する（マイルストーン0〜2の実装はこの前提で進める）
 
 ## 7. 未確定・要検討事項
 

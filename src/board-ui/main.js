@@ -3,12 +3,13 @@
  *
  * 対局UIのエントリポイント。
  * 盤面(BoardView)とエンジン(ShogiEngine)を繋ぎ、人間(先手) vs エンジン(後手)の
- * 対局を成立させるゲームループ。M2では戦形マスタから開始局面を読み込む。
+ * 対局を成立させるゲームループ。M2では戦形・敵マスタを対局条件へ反映する。
  */
 
 import { ShogiEngine } from '../engine/engine.js';
 import { BoardView, Color } from './board.js';
 import { evaluateEnteringKingDeclaration } from './entering-king.mjs';
+import { loadEnemy } from './enemies.mjs';
 import { loadFormation } from './formations.mjs';
 import { RepetitionTracker } from './repetition.mjs';
 
@@ -43,9 +44,13 @@ resultCloseButton.addEventListener('click', () => {
 
 async function main() {
   const formationId = new URLSearchParams(window.location.search).get('formation') || 'standard';
-  setStatus('戦形データを読み込み中...');
-  setLoading('戦形データを読み込み中...');
-  const formation = await loadFormation(formationId);
+  const enemyId = new URLSearchParams(window.location.search).get('enemy') || 'training_partner';
+  setStatus('対局データを読み込み中...');
+  setLoading('対局データを読み込み中...');
+  const [formation, enemy] = await Promise.all([
+    loadFormation(formationId),
+    loadEnemy(enemyId),
+  ]);
 
   setStatus('エンジンを初期化中...');
   setLoading('エンジンを初期化中...');
@@ -140,7 +145,10 @@ async function main() {
     const moves = moveHistory.length ? ' moves ' + moveHistory.join(' ') : '';
     engine.setPosition(formation.start_sfen + moves);
 
-    const { move } = await engine.go({ movetime: 1000 });
+    const { move } = await engine.go({
+      nodes: enemy.node_limit,
+      maxTimeMs: enemy.max_think_time_ms,
+    });
 
     if (move === 'resign') {
       gameOver = true;
@@ -171,11 +179,11 @@ async function main() {
     }
 
     updateDeclareWinButton();
-    setStatus(`${formation.name}：あなたの番です`);
+    setStatus(`${enemy.name}／${formation.name}：あなたの番です`);
   }
 
   updateDeclareWinButton();
-  setStatus(`${formation.name}：あなたの番です（先手）`);
+  setStatus(`${enemy.name}／${formation.name}：あなたの番です（先手）`);
 }
 
 main().catch((e) => {

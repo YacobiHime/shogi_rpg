@@ -97,7 +97,8 @@ export class ShogiEngine {
 
   /**
    * 思考を開始し、bestmoveを待って返す。
-   * @param {{ movetime?: number, nodes?: number }} goOptions
+   * nodesを強さの基準とし、maxTimeMsは極端に遅い端末向けの安全上限として使う。
+   * @param {{ movetime?: number, nodes?: number, maxTimeMs?: number }} goOptions
    * @returns {Promise<{ move: string, ponder?: string }>}
    */
   async go(goOptions = {}) {
@@ -106,10 +107,14 @@ export class ShogiEngine {
     if (goOptions.nodes) cmd += ' nodes ' + goOptions.nodes;
 
     return new Promise((resolve) => {
+      const timeoutId = goOptions.maxTimeMs
+        ? setTimeout(() => this.send('stop'), goOptions.maxTimeMs)
+        : null;
       const listener = (line) => {
         if (line.startsWith('bestmove')) {
           const parts = line.split(' ');
           this._listeners.splice(this._listeners.indexOf(listener), 1);
+          if (timeoutId !== null) clearTimeout(timeoutId);
           resolve({ move: parts[1], ponder: parts[3] });
         }
       };
