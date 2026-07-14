@@ -10,10 +10,12 @@
 
 import { ShogiEngine } from '../engine/engine.js';
 import { BoardView, Color } from './board.js';
+import { evaluateEnteringKingDeclaration } from './entering-king.mjs';
 import { RepetitionTracker } from './repetition.mjs';
 
 const statusEl = document.getElementById('status');
 const resignButton = document.getElementById('resign-button');
+const declareWinButton = document.getElementById('declare-win-button');
 const resultOverlay = document.getElementById('result-overlay');
 const resultMessageEl = document.getElementById('result-message');
 const resultCloseButton = document.getElementById('result-close');
@@ -30,6 +32,7 @@ function setLoading(text) {
 
 function showResult(board, message) {
   resignButton.disabled = true;
+  declareWinButton.disabled = true;
   board.lock();
   resultMessageEl.textContent = message;
   resultOverlay.hidden = false;
@@ -51,6 +54,8 @@ async function main() {
   });
 
   await engine.init();
+  // GUI側の宣言条件（先手28点・後手27点）とエンジン側を一致させる。
+  engine.send('setoption name EnteringKingRule value CSARule27');
   setStatus('エンジン初期化完了。isready送信中...');
   setLoading('評価関数を解析中...');
   await engine.ready();
@@ -66,6 +71,16 @@ async function main() {
   let moveHistory = [];
   let gameOver = false;
   const repetitionTracker = new RepetitionTracker(board.toSfen());
+
+  function humanDeclarationStatus() {
+    return evaluateEnteringKingDeclaration(
+      board.toSfen(), Color.Black, board.isCheck(Color.Black)
+    );
+  }
+
+  function updateDeclareWinButton() {
+    declareWinButton.disabled = gameOver || !humanDeclarationStatus().eligible;
+  }
 
   function finishByRepetition(result) {
     if (!result) return false;
@@ -92,8 +107,16 @@ async function main() {
     showResult(board, 'あなたの投了により敗北しました。');
   });
 
+  declareWinButton.addEventListener('click', () => {
+    if (gameOver || !humanDeclarationStatus().eligible) return;
+    gameOver = true;
+    setStatus('入玉宣言が成立しました。');
+    showResult(board, '入玉宣言によりあなたの勝利です。');
+  });
+
   async function onHumanMove(usiMove) {
     if (gameOver) return;
+    declareWinButton.disabled = true;
     moveHistory.push(usiMove);
 
     if (finishByRepetition(repetitionTracker.record(
@@ -121,8 +144,8 @@ async function main() {
     }
     if (move === 'win') {
       gameOver = true;
-      setStatus('入玉宣言勝ちです。');
-      showResult(board, '入玉宣言によりあなたの勝利です。');
+      setStatus('相手の入玉宣言が成立しました。');
+      showResult(board, '相手の入玉宣言によりあなたの敗北です。');
       return;
     }
 
@@ -141,9 +164,11 @@ async function main() {
       return;
     }
 
+    updateDeclareWinButton();
     setStatus('あなたの番です');
   }
 
+  updateDeclareWinButton();
   setStatus('あなたの番です（先手）');
 }
 

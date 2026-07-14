@@ -13,6 +13,10 @@ nav_order: 7
 ## [Unreleased]
 
 ### Added
+- `src/board-ui/entering-king.mjs`: 先手28点・後手27点の入玉宣言について、玉の位置、
+  敵陣の駒数、点数、王手状態、手番を評価する判定を追加
+- `src/board-ui/test/entering-king.test.mjs`: 入玉宣言の成立条件と不成立条件を確認する
+  テストを追加
 - `src/board-ui/legal-moves.mjs`: 歩打ちで王手した局面について、相手に王手を解消する
   盤上の合法手があるかを調べる打ち歩詰め判定を追加
 - `src/board-ui/test/legal-moves.test.mjs`: 打ち歩詰めの拒否、逃げ道がある歩打ち王手、
@@ -23,9 +27,12 @@ nav_order: 7
   確認するテストを追加
 
 ### Fixed
+- エンジンが `bestmove win` を返した際、プレイヤーの勝利として表示していた問題を修正
 - `shogi.js`単体では判定されない打ち歩詰めを、プレイヤーが指せた問題を修正
 
 ### Changed
+- `src/board-ui/main.js`: プレイヤーの入玉宣言ボタンを制御し、エンジンにも27点法を
+  設定して双方の宣言勝ちを処理するよう変更
 - `src/board-ui/main.js`: 人間とエンジンの各着手後に千日手を判定し、引き分けまたは
   連続王手を続けた側の反則負けとして結果画面を表示するよう変更
 
