@@ -52,6 +52,9 @@ nav_order: 7
   確認するテストを追加
 
 ### Fixed
+- Firebase HostingのルートURLでは`./main.js`が存在しない`/main.js`へ解決され、
+  対局UIが「読み込み中...」から進まなかった問題を修正。HTMLの基準URLを
+  `/src/board-ui/`へ固定し、ルート書き換え後の資産URLを確認する回帰テストを追加
 - ブラウザの`fetch`を`ShogiEngine`のメソッドとして呼び出して`Illegal invocation`になり、
   NNUE取得が常にフォールバックしていた問題を修正
 - エンジンが `bestmove win` を返した際、プレイヤーの勝利として表示していた問題を修正
