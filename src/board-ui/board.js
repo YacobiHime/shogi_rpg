@@ -43,6 +43,7 @@ export class BoardView {
     this.selected = null; // { x, y } または { hand: { color, kind } }
     this.humanColor = Color.Black; // M1では人間=先手固定
     this.locked = false; // 対局終了後の入力を無効化する
+    this._awaitingPromotion = false; // 成り/不成り選択ダイアログの表示中は入力を無視する
     this._buildSvg();
     this.render();
   }
@@ -181,7 +182,7 @@ export class BoardView {
   }
 
   _handleCellClick(x, y) {
-    if (this.locked) return;
+    if (this.locked || this._awaitingPromotion) return;
     if (this.shogi.turn !== this.humanColor) return; // 自分の手番以外は無視
 
     if (this.selected && this.selected.hand) {
@@ -209,13 +210,62 @@ export class BoardView {
 
     const piece = this.shogi.get(fromX, fromY);
     let promote = false;
-    if (Piece.canPromote(piece.kind) && this._canChoosePromote(fromX, fromY, toX, toY)) {
-      promote = window.confirm('成りますか？');
+    if (Piece.canPromote(piece.kind)) {
+      // 「行き所のない駒」（例: 最終段の歩・香、最終2段の桂）は不成りを選べず必ず成る
+      // （shogi.js の move() 内部と同じ判定基準、Shogi.getIllegalUnpromotedRow/getRowToOppositeEnd参照）
+      const forcedPromotion =
+        Shogi.getIllegalUnpromotedRow(piece.kind) >= Shogi.getRowToOppositeEnd(toY, piece.color);
+      if (forcedPromotion) {
+        promote = true;
+      } else if (this._canChoosePromote(fromX, fromY, toX, toY)) {
+        this._awaitingPromotion = true;
+        promote = await this._promptPromotion();
+        this._awaitingPromotion = false;
+      }
     }
 
     this.shogi.move(fromX, fromY, toX, toY, promote);
     this.render();
     this.onMove(this._toUsiMove(fromX, fromY, toX, toY, promote));
+  }
+
+  /**
+   * 成り／不成りの選択ダイアログを表示し、選択結果(boolean)を返す。
+   * containerに重ねてオーバーレイDOMを直接構築する（BoardViewの見た目の一部として自己完結させる）。
+   */
+  _promptPromotion() {
+    return new Promise((resolve) => {
+      const overlay = document.createElement('div');
+      overlay.style.cssText =
+        'position:absolute; inset:0; background:rgba(0,0,0,0.6); ' +
+        'display:flex; align-items:center; justify-content:center; z-index:10;';
+
+      const dialog = document.createElement('div');
+      dialog.style.cssText =
+        'background:#333; color:#eee; padding:16px 24px; border-radius:8px; text-align:center;';
+      dialog.innerHTML = '<p style="margin:0 0 12px;">成りますか？</p>';
+
+      const makeButton = (label, value) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.textContent = label;
+        button.style.cssText = 'margin:0 8px; padding:6px 16px;';
+        button.addEventListener('click', () => {
+          overlay.remove();
+          resolve(value);
+        });
+        return button;
+      };
+
+      dialog.appendChild(makeButton('成る', true));
+      dialog.appendChild(makeButton('成らない', false));
+      overlay.appendChild(dialog);
+
+      if (getComputedStyle(this.container).position === 'static') {
+        this.container.style.position = 'relative';
+      }
+      this.container.appendChild(overlay);
+    });
   }
 
   async _tryDrop(color, kind, x, y) {
