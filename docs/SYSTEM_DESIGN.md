@@ -108,7 +108,10 @@ const DIFFICULTY_MODIFIERS = {
 ```
 
 実効ノード数は`enemy.node_limit * difficulty.node_limit_mult`を四捨五入し、最低1ノードに
-補正する。`move_rank_max_bonus`はMultiPVによる候補手選択の実装時に適用する。
+補正する。手の実効ランク範囲は`enemy.move_rank.min`から
+`enemy.move_rank.max + difficulty.move_rank_max_bonus`までとする。この最大値をMultiPVへ設定し、
+範囲内で取得できた候補手から等確率で1手を選ぶ。候補不足時は取得できた最大ランクまで範囲を縮め、
+`info multipv`を取得できなかった場合は`bestmove`へフォールバックする。
 
 ## 3. 戦形・アイテム・スキルのデータ構造
 

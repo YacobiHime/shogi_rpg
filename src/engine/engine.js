@@ -99,7 +99,11 @@ export class ShogiEngine {
    * 思考を開始し、bestmoveを待って返す。
    * nodesを強さの基準とし、maxTimeMsは極端に遅い端末向けの安全上限として使う。
    * @param {{ movetime?: number, nodes?: number, maxTimeMs?: number }} goOptions
-   * @returns {Promise<{ move: string, ponder?: string }>}
+   * @returns {Promise<{
+   *   move: string,
+   *   ponder?: string,
+   *   candidates: { rank: number, move: string }[]
+   * }>}
    */
   async go(goOptions = {}) {
     let cmd = 'go';
@@ -107,15 +111,30 @@ export class ShogiEngine {
     if (goOptions.nodes) cmd += ' nodes ' + goOptions.nodes;
 
     return new Promise((resolve) => {
+      const candidates = new Map();
       const timeoutId = goOptions.maxTimeMs
         ? setTimeout(() => this.send('stop'), goOptions.maxTimeMs)
         : null;
       const listener = (line) => {
+        if (line.startsWith('info ')) {
+          const rankMatch = line.match(/\bmultipv\s+(\d+)\b/);
+          const moveMatch = line.match(/\bpv\s+(\S+)/);
+          if (rankMatch && moveMatch) {
+            candidates.set(Number(rankMatch[1]), moveMatch[1]);
+          }
+        }
         if (line.startsWith('bestmove')) {
           const parts = line.split(' ');
           this._listeners.splice(this._listeners.indexOf(listener), 1);
           if (timeoutId !== null) clearTimeout(timeoutId);
-          resolve({ move: parts[1], ponder: parts[3] });
+          candidates.set(1, parts[1]);
+          resolve({
+            move: parts[1],
+            ponder: parts[3],
+            candidates: [...candidates.entries()]
+              .map(([rank, move]) => ({ rank, move }))
+              .sort((left, right) => left.rank - right.rank),
+          });
         }
       };
       this.onOutput(listener);
@@ -128,7 +147,10 @@ export class ShogiEngine {
    * @param {{ multiPv?: number }} params
    */
   applyStrengthOptions(params = {}) {
-    if (params.multiPv) {
+    if (params.multiPv !== undefined) {
+      if (!Number.isInteger(params.multiPv) || params.multiPv < 1) {
+        throw new Error('multiPvは1以上の整数にしてください');
+      }
       this.send('setoption name MultiPV value ' + params.multiPv);
     }
   }

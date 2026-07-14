@@ -91,7 +91,12 @@ nav_order: 5
 
 - `easy` / `normal` / `hard` の3キーを必須とする
 - `node_limit_mult` は0より大きい数値とし、敵の`node_limit`へ乗算後、四捨五入して最低1に補正する
-- `move_rank_max_bonus` は0以上の整数とする（MultiPVによる候補手選択で使用）
+- `move_rank_max_bonus` は0以上の整数とし、敵の`move_rank.max`へ加算する
+- 実効範囲は`move_rank.min`から`move_rank.max + move_rank_max_bonus`までとし、
+  その最大値をMultiPVの候補数として設定する
+- 実効範囲内に存在する候補手から等確率で1手を選ぶ。合法手が少なく候補数が不足する場合は、
+  取得できた最大ランクまで範囲を縮め、指定した最小ランクにも届かない場合は取得できた最下位の手を使う
+- MultiPVの`info`行を取得できない場合は、エンジンの`bestmove`（第1候補）へフォールバックする
 
 ## 6. 対局開始構成（対局UI起動時にティラノスクリプトから渡すパラメータ）
 

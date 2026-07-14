@@ -12,6 +12,7 @@ import { calculateEffectiveNodeLimit, loadDifficulty } from './difficulty.mjs';
 import { evaluateEnteringKingDeclaration } from './entering-king.mjs';
 import { loadEnemy } from './enemies.mjs';
 import { loadFormation } from './formations.mjs';
+import { calculateEffectiveMoveRank, selectMoveByRank } from './move-selection.mjs';
 import { RepetitionTracker } from './repetition.mjs';
 
 const statusEl = document.getElementById('status');
@@ -59,6 +60,10 @@ async function main() {
     enemy.node_limit,
     difficulty.node_limit_mult
   );
+  const effectiveMoveRank = calculateEffectiveMoveRank(
+    enemy.move_rank,
+    difficulty.move_rank_max_bonus
+  );
 
   setStatus('エンジンを初期化中...');
   setLoading('エンジンを初期化中...');
@@ -71,6 +76,7 @@ async function main() {
   });
 
   await engine.init();
+  engine.applyStrengthOptions({ multiPv: effectiveMoveRank.max });
   // GUI側の宣言条件（先手28点・後手27点）とエンジン側を一致させる。
   engine.send('setoption name EnteringKingRule value CSARule27');
   setStatus('エンジン初期化完了。isready送信中...');
@@ -153,10 +159,11 @@ async function main() {
     const moves = moveHistory.length ? ' moves ' + moveHistory.join(' ') : '';
     engine.setPosition(formation.start_sfen + moves);
 
-    const { move } = await engine.go({
+    const searchResult = await engine.go({
       nodes: effectiveNodeLimit,
       maxTimeMs: enemy.max_think_time_ms,
     });
+    const { move } = selectMoveByRank(searchResult, effectiveMoveRank);
 
     if (move === 'resign') {
       gameOver = true;
