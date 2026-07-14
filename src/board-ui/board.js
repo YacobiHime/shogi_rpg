@@ -96,6 +96,8 @@ export class BoardView {
         rect.setAttribute('width', CELL);
         rect.setAttribute('height', CELL);
         rect.setAttribute('fill', 'transparent');
+        rect.dataset.x = String(x);
+        rect.dataset.y = String(y);
         rect.style.cursor = 'pointer';
         rect.addEventListener('click', () => this._handleCellClick(x, y));
         this.svg.appendChild(rect);
@@ -137,6 +139,8 @@ export class BoardView {
     const { cx, cy } = this._cellCenter(x, y);
     const g = document.createElementNS(SVG_NS, 'g');
     g.setAttribute('transform', `translate(${cx},${cy})${piece.color === Color.White ? ' rotate(180)' : ''}`);
+    g.dataset.x = String(x);
+    g.dataset.y = String(y);
     g.style.cursor = 'pointer';
     g.addEventListener('click', () => this._handleCellClick(x, y));
 
@@ -157,23 +161,143 @@ export class BoardView {
   }
 
   _drawHands() {
-    // 持ち駒表示（暫定: テキストのみ、打つ操作は駒名クリック→着手先クリックの2段階）
+    // 持ち駒表示。駒種ごとに個別のSVG要素として描画し、ドラッグ&ドロップまたは
+    // クリック選択→着手先クリックの2段階のどちらでも打てるようにする。
     [Color.Black, Color.White].forEach((color, i) => {
       const hand = this.shogi.hands[color] || [];
       const y = i === 0 ? MARGIN + 40 + CELL * BOARD_SIZE + 20 : 20;
-      const text = document.createElementNS(SVG_NS, 'text');
-      text.setAttribute('x', MARGIN);
-      text.setAttribute('y', y);
-      text.setAttribute('font-size', '16');
-      const label = hand.map((p) => kindToString(p.kind)).join(' ') || '（持ち駒なし）';
-      text.textContent = `${color === Color.Black ? '先手' : '後手'}持ち駒: ${label}`;
-      text.style.cursor = hand.length ? 'pointer' : 'default';
-      text.addEventListener('click', () => {
-        if (this.locked || !hand.length) return;
-        this.selected = { hand: { color, kind: hand[0].kind } };
+
+      const label = document.createElementNS(SVG_NS, 'text');
+      label.setAttribute('x', MARGIN);
+      label.setAttribute('y', y);
+      label.setAttribute('font-size', '14');
+      label.textContent = `${color === Color.Black ? '先手' : '後手'}持ち駒:${hand.length ? '' : '（なし）'}`;
+      this.svg.appendChild(label);
+
+      hand.forEach((piece, index) => {
+        const hx = MARGIN + 92 + index * 32;
+        this._drawHandPiece(color, piece.kind, hx, y - 6);
       });
-      this.svg.appendChild(text);
     });
+  }
+
+  _drawHandPiece(color, kind, cx, cy) {
+    const isSelected =
+      this.selected && this.selected.hand &&
+      this.selected.hand.color === color && this.selected.hand.kind === kind;
+    const draggable = !this.locked && color === this.humanColor;
+
+    const g = document.createElementNS(SVG_NS, 'g');
+    g.setAttribute('transform', `translate(${cx},${cy})`);
+    g.style.cursor = draggable ? 'grab' : 'default';
+    if (draggable) g.style.touchAction = 'none';
+
+    const shape = document.createElementNS(SVG_NS, 'polygon');
+    shape.setAttribute('points', '0,-16 12,10 -12,10');
+    shape.setAttribute('fill', isSelected ? '#ffdd77' : '#f5deb3');
+    shape.setAttribute('stroke', '#000');
+    g.appendChild(shape);
+
+    const text = document.createElementNS(SVG_NS, 'text');
+    text.setAttribute('x', '0'); text.setAttribute('y', '5');
+    text.setAttribute('text-anchor', 'middle');
+    text.setAttribute('font-size', '13');
+    text.textContent = kindToString(kind) || '?';
+    g.appendChild(text);
+
+    if (draggable) {
+      g.addEventListener('pointerdown', (e) => this._handleHandPointerDown(e, color, kind));
+    }
+
+    this.svg.appendChild(g);
+  }
+
+  /**
+   * 持ち駒駒のpointerdown起点のドラッグ&ドロップ処理。
+   * 一定距離動かなければ従来のクリック選択（選択→着手先クリック）にフォールバックする。
+   */
+  _handleHandPointerDown(event, color, kind) {
+    if (this.locked || this._awaitingPromotion) return;
+    if (this.shogi.turn !== this.humanColor) return;
+    event.preventDefault();
+
+    const pointerId = event.pointerId;
+    const startX = event.clientX;
+    const startY = event.clientY;
+    let dragging = false;
+    let ghost = null;
+
+    const toSvgPoint = (clientX, clientY) => {
+      const pt = this.svg.createSVGPoint();
+      pt.x = clientX;
+      pt.y = clientY;
+      return pt.matrixTransform(this.svg.getScreenCTM().inverse());
+    };
+
+    const onMove = (moveEvent) => {
+      if (moveEvent.pointerId !== pointerId) return;
+      const dx = moveEvent.clientX - startX;
+      const dy = moveEvent.clientY - startY;
+      if (!dragging && Math.hypot(dx, dy) > 6) {
+        dragging = true;
+        ghost = this._createDragGhost(kind);
+      }
+      if (dragging) {
+        const p = toSvgPoint(moveEvent.clientX, moveEvent.clientY);
+        ghost.setAttribute('transform', `translate(${p.x},${p.y})`);
+      }
+    };
+
+    const onUp = (upEvent) => {
+      if (upEvent.pointerId !== pointerId) return;
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+
+      if (dragging) {
+        if (ghost) ghost.remove();
+        const cell = this._cellAtClientPoint(upEvent.clientX, upEvent.clientY);
+        this.selected = null;
+        if (cell) this._tryDrop(color, kind, cell.x, cell.y);
+        else this.render();
+      } else {
+        // ドラッグせずクリックのみ: 従来通り「選択→着手先クリック」方式にフォールバック
+        this.selected = { hand: { color, kind } };
+        this.render();
+      }
+    };
+
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+  }
+
+  _createDragGhost(kind) {
+    const g = document.createElementNS(SVG_NS, 'g');
+    g.style.pointerEvents = 'none';
+    g.setAttribute('opacity', '0.85');
+
+    const shape = document.createElementNS(SVG_NS, 'polygon');
+    shape.setAttribute('points', '0,-24 18,16 -18,16');
+    shape.setAttribute('fill', '#ffe9b3');
+    shape.setAttribute('stroke', '#000');
+    g.appendChild(shape);
+
+    const text = document.createElementNS(SVG_NS, 'text');
+    text.setAttribute('x', '0'); text.setAttribute('y', '8');
+    text.setAttribute('text-anchor', 'middle');
+    text.setAttribute('font-size', '18');
+    text.textContent = kindToString(kind) || '?';
+    g.appendChild(text);
+
+    this.svg.appendChild(g);
+    return g;
+  }
+
+  /** クライアント座標(clientX/Y)の直下にある盤マスを(x,y)で返す。マス外ならnull */
+  _cellAtClientPoint(clientX, clientY) {
+    const el = document.elementFromPoint(clientX, clientY);
+    const target = el && el.closest ? el.closest('[data-x]') : null;
+    if (!target) return null;
+    return { x: Number(target.dataset.x), y: Number(target.dataset.y) };
   }
 
   /** 対局終了後に盤面クリックを無効化する */
