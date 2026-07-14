@@ -14,21 +14,21 @@
  * （move/drop/getMovesFromの引数順、座標系(x:筋 1-9, y:段 1-9)等）。
  */
 
-// TODO(実装時に確認): vendorへコピーしたパスに合わせて調整する
-import { Shogi, Kind, Color } from './vendor/shogi.esm.js';
+// shogi.js(cjs)をesbuildでESM単一ファイルにバンドルしたもの。
+// 名前付きexportは持たないため、default importしてから分割代入する。
+// 駒種(Kind)は実行時にはただの文字列("FU","NY","NK","NG"等)であり、
+// TypeScriptの型としてのみ存在するため実行時オブジェクトとしてimportできない。
+import shogiLib from './vendor/shogi.esm.js';
+const { Shogi, Color, Piece, kindToString } = shogiLib;
 
 const BOARD_SIZE = 9;
 const CELL = 56; // px相当のSVG座標単位
 const MARGIN = 40;
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
-// 駒種 -> 表示用の一文字表記（画像素材が揃うまでの暫定表示）
-const KIND_LABEL = {
-  [Kind.FU]: '歩', [Kind.KY]: '香', [Kind.KE]: '桂', [Kind.GI]: '銀',
-  [Kind.KI]: '金', [Kind.KA]: '角', [Kind.HI]: '飛', [Kind.OU]: '玉',
-  [Kind.TO]: 'と', [Kind.NKY]: '成香', [Kind.NKE]: '成桂', [Kind.NGI]: '成銀',
-  [Kind.UM]: '馬', [Kind.RY]: '龍',
-};
+// USIの打ち駒表記(P/L/N/S/G/B/R)とshogi.jsのkind文字列("FU"等)の対応表
+const KIND_TO_USI = { FU: 'P', KY: 'L', KE: 'N', GI: 'S', KI: 'G', KA: 'B', HI: 'R' };
+const USI_TO_KIND = { P: 'FU', L: 'KY', N: 'KE', S: 'GI', G: 'KI', B: 'KA', R: 'HI' };
 
 export class BoardView {
   /**
@@ -76,6 +76,28 @@ export class BoardView {
       this.svg.appendChild(line1);
       this.svg.appendChild(line2);
     }
+    this._drawCellHitboxes();
+  }
+
+  /**
+   * 全81マスに透明なクリック領域を敷く。駒の有無に関わらずクリックを拾う必要があるため
+   * （移動先が空きマスの場合、駒側のクリックハンドラだけでは着手を検知できない）。
+   */
+  _drawCellHitboxes() {
+    for (let x = 1; x <= BOARD_SIZE; x++) {
+      for (let y = 1; y <= BOARD_SIZE; y++) {
+        const { cx, cy } = this._cellCenter(x, y);
+        const rect = document.createElementNS(SVG_NS, 'rect');
+        rect.setAttribute('x', cx - CELL / 2);
+        rect.setAttribute('y', cy - CELL / 2);
+        rect.setAttribute('width', CELL);
+        rect.setAttribute('height', CELL);
+        rect.setAttribute('fill', 'transparent');
+        rect.style.cursor = 'pointer';
+        rect.addEventListener('click', () => this._handleCellClick(x, y));
+        this.svg.appendChild(rect);
+      }
+    }
   }
 
   _line(x1, y1, x2, y2) {
@@ -101,7 +123,7 @@ export class BoardView {
   _drawPieces() {
     for (let x = 1; x <= BOARD_SIZE; x++) {
       for (let y = 1; y <= BOARD_SIZE; y++) {
-        const piece = this.shogi.board[x][y]; // TODO: 実際のプロパティ名を確認(board[x][y]想定)
+        const piece = this.shogi.get(x, y); // shogi.board は0-indexedのため公開APIのget(x,y)(1-indexed)を使う
         if (!piece) continue;
         this._drawPieceAt(x, y, piece);
       }
@@ -125,7 +147,7 @@ export class BoardView {
     text.setAttribute('x', '0'); text.setAttribute('y', '8');
     text.setAttribute('text-anchor', 'middle');
     text.setAttribute('font-size', '18');
-    text.textContent = KIND_LABEL[piece.kind] || '?';
+    text.textContent = kindToString(piece.kind) || '?';
     g.appendChild(text);
 
     this.svg.appendChild(g);
@@ -134,13 +156,13 @@ export class BoardView {
   _drawHands() {
     // 持ち駒表示（暫定: テキストのみ、打つ操作は駒名クリック→着手先クリックの2段階）
     [Color.Black, Color.White].forEach((color, i) => {
-      const hand = this.shogi.hands[color] || []; // TODO: 実際のプロパティ名を確認
+      const hand = this.shogi.hands[color] || [];
       const y = i === 0 ? MARGIN + 40 + CELL * BOARD_SIZE + 20 : 20;
       const text = document.createElementNS(SVG_NS, 'text');
       text.setAttribute('x', MARGIN);
       text.setAttribute('y', y);
       text.setAttribute('font-size', '16');
-      const label = hand.map((p) => KIND_LABEL[p.kind]).join(' ') || '（持ち駒なし）';
+      const label = hand.map((p) => kindToString(p.kind)).join(' ') || '（持ち駒なし）';
       text.textContent = `${color === Color.Black ? '先手' : '後手'}持ち駒: ${label}`;
       text.style.cursor = hand.length ? 'pointer' : 'default';
       text.addEventListener('click', () => {
@@ -161,7 +183,7 @@ export class BoardView {
     }
 
     if (!this.selected) {
-      const piece = this.shogi.board[x][y];
+      const piece = this.shogi.get(x, y);
       if (piece && piece.color === this.humanColor) {
         this.selected = { x, y };
       }
@@ -173,16 +195,17 @@ export class BoardView {
   }
 
   async _tryMove(fromX, fromY, toX, toY) {
-    const moves = this.shogi.getMovesFrom(fromX, fromY); // TODO: 実際のAPI名を確認
+    const moves = this.shogi.getMovesFrom(fromX, fromY);
     const candidate = moves.find((m) => m.to.x === toX && m.to.y === toY);
     if (!candidate) return; // 合法手でない
 
+    const piece = this.shogi.get(fromX, fromY);
     let promote = false;
-    if (candidate.promote !== undefined && this._canChoosePromote(fromX, fromY, toX, toY)) {
+    if (Piece.canPromote(piece.kind) && this._canChoosePromote(fromX, fromY, toX, toY)) {
       promote = window.confirm('成りますか？');
     }
 
-    this.shogi.move(fromX, fromY, toX, toY, promote); // TODO: 引数順を要確認
+    this.shogi.move(fromX, fromY, toX, toY, promote);
     this.render();
     this.onMove(this._toUsiMove(fromX, fromY, toX, toY, promote));
   }
@@ -190,7 +213,7 @@ export class BoardView {
   async _tryDrop(color, kind, x, y) {
     if (color !== this.humanColor) return;
     try {
-      this.shogi.drop(x, y, kind); // TODO: 引数順を要確認
+      this.shogi.drop(x, y, kind);
       this.render();
       this.onMove(this._toUsiDrop(kind, x, y));
     } catch (e) {
@@ -212,16 +235,30 @@ export class BoardView {
   }
 
   _toUsiDrop(kind, x, y) {
-    const KIND_USI = { [Kind.FU]: 'P', [Kind.KY]: 'L', [Kind.KE]: 'N', [Kind.GI]: 'S', [Kind.KI]: 'G', [Kind.KA]: 'B', [Kind.HI]: 'R' };
     const rank = (y) => String.fromCharCode('a'.charCodeAt(0) + y - 1);
-    return `${KIND_USI[kind]}*${x}${rank(y)}`;
+    return `${KIND_TO_USI[kind]}*${x}${rank(y)}`;
   }
 
   /** エンジンから返されたUSI形式の指し手をこちらの盤面にも反映する（敵の指し手適用用） */
   applyUsiMove(usiMove) {
-    // TODO: ドロップ("P*5e"等)・成り("+")を含めたUSI文字列パースの実装
-    // M1実装時に、shogi.js側のUSI変換ヘルパーがあれば優先的に使うこと
-    throw new Error('applyUsiMove: 未実装 (M1実装時に対応)');
+    const parseSquare = (file, rank) => ({
+      x: Number(file),
+      y: rank.charCodeAt(0) - 'a'.charCodeAt(0) + 1,
+    });
+
+    const promote = usiMove.endsWith('+');
+    const body = promote ? usiMove.slice(0, -1) : usiMove;
+
+    if (body[1] === '*') {
+      const kind = USI_TO_KIND[body[0]];
+      const { x, y } = parseSquare(body[2], body[3]);
+      this.shogi.drop(x, y, kind);
+    } else {
+      const from = parseSquare(body[0], body[1]);
+      const to = parseSquare(body[2], body[3]);
+      this.shogi.move(from.x, from.y, to.x, to.y, promote);
+    }
+    this.render();
   }
 
   toSfen() {

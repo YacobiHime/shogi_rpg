@@ -40,6 +40,10 @@ tools/m0-verification/*.data
 src/board-ui/vendor/*
 !src/board-ui/vendor/.gitkeep
 
+# yaneuraou.jsは.dataファイルをindex.html基準の相対パスでfetchするため、
+# vendor/とは別にindex.htmlと同じ階層にも配置が必要（README参照）
+src/board-ui/yaneuraou.data
+
 # 開発用HTTPサーバー（COOP/COEP対応、各自の環境で用意する。tools/m0-verificationと同じ方針）
 src/board-ui/server.js
 

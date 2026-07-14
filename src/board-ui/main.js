@@ -56,7 +56,7 @@ async function main() {
     }
 
     moveHistory.push(move);
-    board.applyUsiMove(move); // TODO(M1実装時): USIの指し手文字列パースを実装する
+    board.applyUsiMove(move);
     setStatus('あなたの番です');
   }
 
