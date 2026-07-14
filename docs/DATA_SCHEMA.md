@@ -89,6 +89,10 @@ nav_order: 5
 }
 ```
 
+- `easy` / `normal` / `hard` の3キーを必須とする
+- `node_limit_mult` は0より大きい数値とし、敵の`node_limit`へ乗算後、四捨五入して最低1に補正する
+- `move_rank_max_bonus` は0以上の整数とする（MultiPVによる候補手選択で使用）
+
 ## 6. 対局開始構成（対局UI起動時にティラノスクリプトから渡すパラメータ）
 
 ```jsonc

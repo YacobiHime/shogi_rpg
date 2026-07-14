@@ -13,6 +13,9 @@ nav_order: 7
 ## [Unreleased]
 
 ### Added
+- `data/difficulty.json`: やさしい／ふつう／むずかしいのノード数倍率と手のランク補正を追加
+- `src/board-ui/difficulty.mjs` / `test/difficulty.test.mjs`: 難易度マスタの取得・検証、
+  実効ノード数の計算とテストを追加
 - `data/enemies.json`: 内蔵評価関数を使う最初の敵「稽古相手」と、探索ノード数・最大思考時間を追加
 - `src/board-ui/enemies.mjs`: 敵マスタの取得、スキーマ検証、戦形参照検証、IDによる選択を追加
 - `src/board-ui/test/enemies.test.mjs` / `engine.test.mjs`: 敵データとノード数基準の探索停止を確認するテストを追加
@@ -37,6 +40,8 @@ nav_order: 7
 - `shogi.js`単体では判定されない打ち歩詰めを、プレイヤーが指せた問題を修正
 
 ### Changed
+- 対局UIがURLクエリ`difficulty`を受け取り、敵の基準ノード数へ難易度倍率を適用し、
+  現在の難易度名を画面へ表示するよう変更
 - 敵AIの強さは端末性能差を抑えるため`node_limit`を主基準とし、`max_think_time_ms`は
   極端に遅い端末で思考を停止する安全上限として扱う方針へ変更
 - 対局UIがURLクエリ`enemy`で敵を受け取り、敵名と探索制限を対局へ反映するよう変更

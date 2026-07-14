@@ -1,0 +1,14 @@
+{
+  "easy": {
+    "node_limit_mult": 0.5,
+    "move_rank_max_bonus": 2
+  },
+  "normal": {
+    "node_limit_mult": 1.0,
+    "move_rank_max_bonus": 0
+  },
+  "hard": {
+    "node_limit_mult": 1.5,
+    "move_rank_max_bonus": 0
+  }
+}

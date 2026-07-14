@@ -101,11 +101,14 @@ engine.postMessage("go nodes " + enemyConfig.nodeLimit);
 
 ```js
 const DIFFICULTY_MODIFIERS = {
-  easy:   { nodeLimitMult: 0.5, moveRankMax: 3 },
-  normal: { nodeLimitMult: 1.0, moveRankMax: 1 },
-  hard:   { nodeLimitMult: 1.5, moveRankMax: 1 },
+  easy:   { node_limit_mult: 0.5, move_rank_max_bonus: 2 },
+  normal: { node_limit_mult: 1.0, move_rank_max_bonus: 0 },
+  hard:   { node_limit_mult: 1.5, move_rank_max_bonus: 0 },
 };
 ```
+
+実効ノード数は`enemy.node_limit * difficulty.node_limit_mult`を四捨五入し、最低1ノードに
+補正する。`move_rank_max_bonus`はMultiPVによる候補手選択の実装時に適用する。
 
 ## 3. 戦形・アイテム・スキルのデータ構造
 

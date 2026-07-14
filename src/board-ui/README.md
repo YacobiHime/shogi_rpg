@@ -12,6 +12,7 @@ src/board-ui/main.js      … 上記2つを繋ぐエントリポイント
 src/board-ui/entering-king.mjs … 27点法の入玉宣言条件を判定
 src/board-ui/formations.mjs … 戦形マスタの取得・検証・選択
 src/board-ui/enemies.mjs … 敵マスタの取得・検証・選択
+src/board-ui/difficulty.mjs … 難易度マスタの取得・検証・ノード数補正
 src/board-ui/index.html   … 検証用ページ
 src/board-ui/vendor/      … 外部ライブラリの配置場所（.gitignore対象、下記手順で用意）
 ```
@@ -114,6 +115,14 @@ http://localhost:<port>/src/board-ui/index.html?formation=standard&enemy=trainin
 強さは`node_limit`を主基準とし、`max_think_time_ms`は低速端末で思考が終わらない場合の
 安全上限として使う。
 
+難易度も指定する場合:
+```
+http://localhost:<port>/src/board-ui/index.html?formation=standard&enemy=training_partner&difficulty=easy
+```
+
+難易度は`data/difficulty.json`へ定義する。未指定時は`normal`（ふつう）を使用し、
+`node_limit_mult`を敵の`node_limit`へ乗算した実効ノード数で探索する。
+
 ## 既知の未実装・要対応事項（このコードをベースに実装を進める際の引き継ぎ事項）
 
 - 敵データに応じた本番評価関数（水匠5・hao）の`nnuePath`指定（M2で実装）
@@ -129,7 +138,8 @@ http://localhost:<port>/src/board-ui/index.html?formation=standard&enemy=trainin
 npm test
 ```
 
-敵・戦形マスタのスキーマと参照整合性、ノード数基準のUSIコマンドと最大思考時間による
+敵・戦形・難易度マスタのスキーマと参照整合性、難易度を反映した実効ノード数、
+ノード数基準のUSIコマンドと最大思考時間による
 停止処理を確認する。合法手フィルターが王手放置の盤上移動・持ち駒打ちと打ち歩詰めを拒否し、通常の
 歩打ち王手や歩以外の駒を打つ詰みは許可すること、および通常の千日手と連続王手による
 千日手を正しく区別することをNode.jsの組み込みテストランナーで確認する。
