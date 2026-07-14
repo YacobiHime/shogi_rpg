@@ -84,9 +84,11 @@ engine.postMessage("go nodes " + enemyConfig.nodeLimit);
 端末が高速なほど敵が強くなる問題を抑えつつ、低速端末で思考が終わらない事態を防ぐ。
 
 `nnue_file`が指定された場合、対局UIはファイル名を`assets/nnue/`配下のURLへ解決し、
-エンジン初期化前の`preRun`で仮想FSの`/nn.bin`へ配置する。`null`の場合、および指定ファイルが
-未配置・取得失敗・空ファイルの場合はエンジン内蔵評価関数を使用する。外部評価関数はWASMビルドと
-NNUEアーキテクチャが一致するものに限り、実ファイルの追加時に再配布条件を確認する。
+HalfKP noeval版WASMを動的に読み込み、エンジン初期化前の`preRun`で仮想FSの`/nn.bin`へ配置する。
+`null`の場合は通常版WASMの内蔵評価関数を使用する。指定ファイルの未配置・取得失敗・空ファイル、
+HalfKPローダー取得失敗、またはHalfKPエンジン初期化失敗時は通常版へフォールバックする。
+外部評価関数はWASMビルドとNNUEアーキテクチャが一致するものに限り、実ファイルの追加時に
+再配布条件を確認する。
 
 ```json
 {
@@ -197,7 +199,9 @@ const DIFFICULTY_MODIFIERS = {
 
 ### 5.1 採用エンジン
 
-- `YaneuraOu.wasm`（有志によるWASMビルド）をベースに動作検証する
+- 内蔵評価用に`yaneuraou.wasm` 0.1.2、HalfKP評価関数用に
+  `@mizarjp/yaneuraou.halfkp.noeval` 7.6.3-alpha.0を採用する
+- 対局開始時に敵の`nnue_file`を見てローダーを選び、初回ロード時にだけ必要なWASMを取得する
 - ライセンスはGPLv3系（Stockfish由来コードを含む）。自作コードと結合して配布する際はエンジン部分のソースコード開示義務に留意する
 
 ### 5.2 評価関数ファイル

@@ -10,6 +10,7 @@ import { ShogiEngine } from '../engine/engine.js';
 import { BoardView, Color } from './board.js';
 import { calculateEffectiveNodeLimit, loadDifficulty } from './difficulty.mjs';
 import { evaluateEnteringKingDeclaration } from './entering-king.mjs';
+import { loadEngineFactories } from './engine-loader.mjs';
 import { loadEnemy } from './enemies.mjs';
 import { loadFormation } from './formations.mjs';
 import { calculateEffectiveMoveRank, selectMoveByRank } from './move-selection.mjs';
@@ -70,13 +71,18 @@ async function main() {
   setStatus('エンジンを初期化中...');
   setLoading('エンジンを初期化中...');
 
+  const handleNnueFallback = ({ path, error }) => {
+    console.warn(`NNUE ${path} を使用できないため内蔵評価関数を使用します`, error);
+    setLoading('NNUEエンジンを使用できないため、内蔵評価関数を使用します...');
+  };
+  const engineFactories = await loadEngineFactories(nnuePath, {
+    onFallback: handleNnueFallback,
+  });
   const engine = new ShogiEngine({
-    factory: window.YaneuraOu,
-    nnuePath,
-    onNnueFallback: ({ path, error }) => {
-      console.warn(`評価関数 ${path} を取得できないため内蔵評価関数を使用します`, error);
-      setLoading('評価関数を取得できないため、内蔵評価関数を使用します...');
-    },
+    factory: engineFactories.factory,
+    fallbackFactory: engineFactories.fallbackFactory,
+    nnuePath: engineFactories.useNnue ? nnuePath : null,
+    onNnueFallback: handleNnueFallback,
   });
 
   await engine.init();

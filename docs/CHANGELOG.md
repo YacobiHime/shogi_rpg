@@ -13,6 +13,14 @@ nav_order: 7
 ## [Unreleased]
 
 ### Added
+- `src/board-ui/engine-loader.mjs`: 敵の`nnue_file`に応じて通常版またはHalfKP noeval版の
+  WASMローダーを動的に読み込む処理を追加
+- `src/board-ui/vendor/`: `@mizarjp/yaneuraou.halfkp.noeval` 7.6.3-alpha.0の本番配布用
+  JS・WASM・Workerを追加
+- 静的ホスティングへそのまま配置できるよう、通常版YaneuraOu.wasmと`shogi.esm.js`を含む
+  ブラウザ実行用vendor資産を本番配布対象へ変更
+- `src/board-ui/test/engine-loader.test.mjs`: エンジン選択、ローダー再利用、取得失敗時の
+  フォールバックを確認するテストを追加
 - `src/board-ui/nnue.mjs` / `test/nnue.test.mjs`: 敵の`nnue_file`を`assets/nnue/`配下の
   安全なURLへ解決する処理とテストを追加
 - `src/board-ui/move-selection.mjs` / `test/move-selection.test.mjs`: 敵の`move_rank`へ
@@ -40,10 +48,14 @@ nav_order: 7
   確認するテストを追加
 
 ### Fixed
+- ブラウザの`fetch`を`ShogiEngine`のメソッドとして呼び出して`Illegal invocation`になり、
+  NNUE取得が常にフォールバックしていた問題を修正
 - エンジンが `bestmove win` を返した際、プレイヤーの勝利として表示していた問題を修正
 - `shogi.js`単体では判定されない打ち歩詰めを、プレイヤーが指せた問題を修正
 
 ### Changed
+- NNUE指定時はHalfKP noeval版を使用し、ローダー取得・評価関数取得・エンジン初期化の
+  いずれかに失敗した場合は通常版WASMの内蔵評価へ切り替えるよう変更
 - 対局UIが敵の`nnue_file`をエンジン初期化へ渡し、取得した評価関数を`preRun`で仮想FSへ
   書き込むよう変更。未指定・未配置・取得失敗・空ファイルの場合は内蔵評価関数へフォールバックする
 - `src/engine/engine.js`: `info multipv ... pv ...`の最終候補を順位別に収集し、

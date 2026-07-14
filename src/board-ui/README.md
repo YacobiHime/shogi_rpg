@@ -15,13 +15,17 @@ src/board-ui/enemies.mjs … 敵マスタの取得・検証・選択
 src/board-ui/difficulty.mjs … 難易度マスタの取得・検証・ノード数補正
 src/board-ui/move-selection.mjs … 手のランク補正とMultiPV候補からの指し手選択
 src/board-ui/nnue.mjs     … 敵の評価関数ファイル名から配布URLを解決
+src/board-ui/engine-loader.mjs … NNUEの有無に応じてWASMローダーを動的選択
 src/board-ui/index.html   … 検証用ページ
-src/board-ui/vendor/      … 外部ライブラリの配置場所（.gitignore対象、下記手順で用意）
+src/board-ui/vendor/      … 静的配信に含めるブラウザ実行用の外部ライブラリ
 ```
 
 ## セットアップ手順
 
 ### 1. shogi.js の取得とvendorへの配置
+
+本番配布に必要な`vendor/shogi.esm.js`はリポジトリへ同梱済み。更新・再生成する場合は
+次の手順を使う。
 
 ```bash
 cd src/board-ui
@@ -57,7 +61,8 @@ APIの一次情報は以下を参照:
 
 ### 2. YaneuraOu.wasmの配置
 
-`tools/m0-verification/README.md`の手順と同じ。
+通常版の本番配布資産もリポジトリへ同梱済み。バージョン更新時は
+`tools/m0-verification/README.md`と同じ次の手順で再配置する。
 
 ```bash
 cd src/board-ui
@@ -68,7 +73,7 @@ cp node_modules/yaneuraou.wasm/yaneuraou.worker.js ./vendor/
 cp node_modules/yaneuraou.wasm/yaneuraou.data ./vendor/
 ```
 
-`index.html`の`<script src="./vendor/yaneuraou.js">`のパスと一致させること。
+通常版ローダーは`engine-loader.mjs`が必要時に`./vendor/yaneuraou.js`を読み込む。
 
 **注意: `yaneuraou.data`は`vendor/`だけでなく`src/board-ui/`直下にも配置すること。**
 ```bash
@@ -77,6 +82,19 @@ cp node_modules/yaneuraou.wasm/yaneuraou.data ./yaneuraou.data
 `yaneuraou.js`は`.wasm`はスクリプト自身の場所基準で解決するが、`.data`は
 ドキュメント（`index.html`）の場所基準の相対パスでfetchするため、`vendor/`配下だけでは
 `404`になる（動作確認で判明した挙動）。
+
+水匠5・Hao用の`yaneuraou.halfkp.noeval.js`、`.wasm`、`.worker.js`は本番配布用として
+`vendor/`へ同梱済み。これらは`@mizarjp/yaneuraou.halfkp.noeval` 7.6.3-alpha.0由来で、
+`nnue_file`を指定した敵のときだけ動的に読み込まれる。
+
+評価関数本体は既存ファイルを本番URLへコピーする。PowerShellでは次のように配置できる。
+
+```powershell
+Copy-Item ../../ShogiAI/Suisho5/eval/nn.bin ../../assets/nnue/suisho5.bin
+Copy-Item ../../ShogiAI/hao/eval/nn.bin ../../assets/nnue/hao.bin
+```
+
+`data/enemies.json`の`nnue_file`には、配置先の`suisho5.bin`または`hao.bin`を指定する。
 
 ### 3. 開発用HTTPサーバーの起動
 
@@ -120,7 +138,8 @@ http://localhost:<port>/src/board-ui/index.html?formation=standard&enemy=trainin
 `nnue_file`が`null`ならエンジン内蔵評価関数を使用する。ファイル名を指定する場合は、
 ライセンスとWASMエンジンとのNNUEアーキテクチャ一致を確認した評価関数を
 `assets/nnue/<nnue_file>`へ配置する。指定ファイルが未配置、取得失敗、または空の場合は
-内蔵評価関数へフォールバックする。ディレクトリを含む値は敵マスタの検証で拒否される。
+通常版WASMの内蔵評価関数へフォールバックする。HalfKPローダーまたはHalfKPエンジンの
+初期化に失敗した場合も同様に通常版へ切り替える。ディレクトリを含む値は敵マスタの検証で拒否される。
 
 難易度も指定する場合:
 ```
@@ -135,7 +154,6 @@ http://localhost:<port>/src/board-ui/index.html?formation=standard&enemy=trainin
 
 ## 既知の未実装・要対応事項（このコードをベースに実装を進める際の引き継ぎ事項）
 
-- 水匠5・haoと互換性のあるHalfKP noeval版WASMを本番配布用vendorへ組み込む手順の確定
 - 駒・盤の本番用画像素材（現状はSVGの簡易図形と文字表示）
 
 `applyUsiMove()`のパーサー実装、盤面API呼び出し箇所（`shogi.get()`等）、空きマスへの
@@ -150,7 +168,7 @@ npm test
 
 敵・戦形・難易度マスタのスキーマと参照整合性、難易度を反映した実効ノード数と手のランク範囲、
 MultiPV候補の収集・ランダム選択・候補不足時のフォールバック、NNUEのパス解決・初期化前注入・
-未配置時の内蔵評価へのフォールバック、ノード数基準のUSIコマンドと
+エンジン動的選択・各初期化段階からの内蔵評価へのフォールバック、ノード数基準のUSIコマンドと
 最大思考時間による停止処理を確認する。合法手フィルターが王手放置の盤上移動・持ち駒打ちと打ち歩詰めを拒否し、通常の
 歩打ち王手や歩以外の駒を打つ詰みは許可すること、および通常の千日手と連続王手による
 千日手を正しく区別することをNode.jsの組み込みテストランナーで確認する。

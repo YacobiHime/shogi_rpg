@@ -19,12 +19,14 @@
  * @property {() => Promise<any>} factory
  *   エンジンのグローバルファクトリ関数（例: window.YaneuraOu）。
  *   npmパッケージ同梱のyaneuraou.jsを読み込むとグローバルに生える。
+ * @property {() => Promise<any>} [fallbackFactory]
+ *   NNUE取得または主エンジン初期化に失敗した場合に使う内蔵評価版ファクトリ。
  * @property {string} [nnuePath]
  *   評価関数ファイル(nn.bin等)のURL。本番エンジン(水匠5/hao)では必須。
  *   軽量版(arashigaoka)のように評価関数がwasm.data内に同梱されている場合は不要。
  * @property {string} [nnueVirtualPath] 仮想FS上の書き込み先パス（省略時 '/nn.bin'）
  * @property {typeof fetch} [fetchImpl] 評価関数の取得処理（テスト差し替え用）
- * @property {(details: { path: string, error: Error }) => void} [onNnueFallback]
+ * @property {(details: { path: string, error: Error, stage: string }) => void} [onNnueFallback]
  *   評価関数を取得できず、内蔵評価関数へフォールバックした際の通知先。
  */
 
@@ -32,6 +34,7 @@ export class ShogiEngine {
   /** @param {EngineOptions} options */
   constructor(options) {
     this.factory = options.factory;
+    this.fallbackFactory = options.fallbackFactory || null;
     this.nnuePath = options.nnuePath || null;
     this.nnueVirtualPath = options.nnueVirtualPath || '/nn.bin';
     this.fetchImpl = options.fetchImpl || fetch;
@@ -65,12 +68,15 @@ export class ShogiEngine {
     /** @type {{ preRun: ((mod: any) => void)[] }} */
     const moduleArgs = { preRun: [] };
 
+    let factory = this.factory;
     if (this.nnuePath) {
       // CLAUDE.md 2. の注意事項:
       // preRunフックでモジュール初期化前に仮想ファイルシステムへ書き込む。
       // 初期化後にFS.writeFile()すると別スレッドから見えず失敗する。
       try {
-        const response = await this.fetchImpl(this.nnuePath);
+        // Window.fetchはメソッドとして別オブジェクトへ束縛するとIllegal invocationになる。
+        const fetchImpl = this.fetchImpl;
+        const response = await fetchImpl(this.nnuePath);
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}`);
         }
@@ -84,12 +90,23 @@ export class ShogiEngine {
         const error = cause instanceof Error ? cause : new Error(String(cause));
         this.activeNnuePath = null;
         if (this.onNnueFallback) {
-          this.onNnueFallback({ path: this.nnuePath, error });
+          this.onNnueFallback({ path: this.nnuePath, error, stage: 'fetch' });
         }
+        if (this.fallbackFactory) factory = this.fallbackFactory;
       }
     }
 
-    this.instance = await this.factory(moduleArgs);
+    try {
+      this.instance = await factory(moduleArgs);
+    } catch (cause) {
+      if (!this.fallbackFactory || factory === this.fallbackFactory) throw cause;
+      const error = cause instanceof Error ? cause : new Error(String(cause));
+      this.activeNnuePath = null;
+      if (this.onNnueFallback) {
+        this.onNnueFallback({ path: this.nnuePath, error, stage: 'engine' });
+      }
+      this.instance = await this.fallbackFactory({ preRun: [] });
+    }
     this.instance.addMessageListener((line) => this._emit(line));
 
     await this._sendAndWaitFor('usi', (line) => line === 'usiok');

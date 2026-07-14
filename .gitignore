@@ -39,10 +39,20 @@ tools/m0-verification/*.data
 # 配置手順は src/board-ui/README.md を参照。
 src/board-ui/vendor/*
 !src/board-ui/vendor/.gitkeep
+# 静的ホスティングで実行するために必要な本番vendor資産
+!src/board-ui/vendor/shogi.esm.js
+!src/board-ui/vendor/yaneuraou.js
+!src/board-ui/vendor/yaneuraou.wasm
+!src/board-ui/vendor/yaneuraou.worker.js
+!src/board-ui/vendor/yaneuraou.data
+# HalfKP noeval版はNNUE指定敵の本番実行に必要なため配布物へ含める
+!src/board-ui/vendor/yaneuraou.halfkp.noeval.js
+!src/board-ui/vendor/yaneuraou.halfkp.noeval.wasm
+!src/board-ui/vendor/yaneuraou.halfkp.noeval.worker.js
 
 # yaneuraou.jsは.dataファイルをindex.html基準の相対パスでfetchするため、
 # vendor/とは別にindex.htmlと同じ階層にも配置が必要（README参照）
-src/board-ui/yaneuraou.data
+!src/board-ui/yaneuraou.data
 
 # 開発用HTTPサーバー（COOP/COEP対応、各自の環境で用意する。tools/m0-verificationと同じ方針）
 src/board-ui/server.js

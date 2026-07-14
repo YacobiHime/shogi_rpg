@@ -76,19 +76,30 @@ nav_order: 9
 - 検証日: 2026-07-11
 - 結果: 失敗（SharedArrayBuffer/PThread問題により採用見送り）
 
-### YaneuraOu.wasm（arashigaoka版、M0技術検証用）
+### YaneuraOu.wasm（arashigaoka版、通常版・内蔵評価フォールバック用）
 
 - 種別: 将棋AIエンジン（WASMビルド）
 - 入手元URL: https://www.npmjs.com/package/yaneuraou.wasm（npmパッケージ、v0.1.2）
 - 制作者: arashigaoka 氏（Yuta Okumura、yaneurao/YaneuraOuのフォーク）
 - ライセンス: **GPL-3.0**（確認済み。npmパッケージのpackage.jsonおよびREADME.mdより確認）
 - 評価関数: k-p-256-32-32（軽量版、yaneurao/YaneuraOu 2019/01/15リリース）
-- **重要**: これはマイルストーン0の技術検証（WASM実行・Web Worker通信・USIプロトコル・速度計測）のための一時的な使用であり、arashigaoka版に同梱されている評価関数(k-p-256-32-32)を本番配布用の評価関数として採用するものではありません
+- HalfKP評価関数を使用しない通常敵と、NNUE取得・HalfKP初期化失敗時のフォールバックに使用する
 - **mizar版検証失敗による採用**: mizar版がSharedArrayBuffer/PThread問題で動作しなかったため、技術検証目的でarashigaoka版（シングルスレッド版）を使用
 - 本番評価関数は引き続き「水匠5」「Hao（Háo）」「リゼロ評価関数」から検討する
-- 表記要否: 要（検証専用ツールとしての記録。本番配布には組み込まない）
-- 使用箇所: /tools/m0-verification/ 配下での技術検証用
+- 表記要否: 要
+- 使用箇所: `/tools/m0-verification/`での技術検証、および`src/board-ui/vendor/`の通常版エンジン
 - 追加日: 2026-07-11
+
+### @mizarjp/yaneuraou.halfkp.noeval（本番HalfKP版）
+
+- 種別: 将棋AIエンジン（WASMビルド）
+- 入手元URL: https://www.npmjs.com/package/@mizarjp/yaneuraou.halfkp.noeval
+- 制作者: mizar 氏
+- バージョン: 7.6.3-alpha.0
+- ライセンス: **GPL-3.0**（npmパッケージのメタデータで確認）
+- 表記要否: 要
+- 使用箇所: `src/board-ui/vendor/`。水匠5・HaoのHalfKP評価関数を使う敵の思考エンジン
+- 追加日: 2026-07-14
 
 ### shogi.js
 
@@ -99,8 +110,8 @@ nav_order: 9
 - 表記要否: 不要（MITのためクレジット表記は必須ではないが、慣行として掲載を推奨）
 - 使用箇所: 対局UIの合法手判定・成り／持ち駒・SFEN変換（`src/board-ui/board.js`）。
   npm配布物にビルド済みESMバンドルが含まれないため、esbuildで単一ESMファイルに
-  バンドルした上で`src/board-ui/vendor/shogi.esm.js`として配置（`.gitignore`対象、
-  配布物には含まれる。手順は`src/board-ui/README.md`参照）
+  バンドルした上で`src/board-ui/vendor/shogi.esm.js`として本番配布（再生成手順は
+  `src/board-ui/README.md`参照）
 - 追加日: 2026-07-14
 
 ## 評価関数（NNUEファイル）
@@ -175,7 +186,7 @@ nav_order: 9
 |---|---|---|
 | 水匠6以降（水匠10beta等含む） | やねうら王支援者限定配布（GitHub Sponsors/FANBOX経由）のため、無償同梱不可 | 2026-07-09 |
 
-**本プロジェクトで使用する評価関数は「水匠5」「Hao（Háo）」「振電3」「リゼロ評価関数」の4種**とする。
+**本プロジェクトで配布する評価関数は「水匠5」「Hao（Háo）」「リゼロ評価関数」の3種**とする。
 
 ---
 
