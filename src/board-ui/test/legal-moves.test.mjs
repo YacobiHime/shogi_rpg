@@ -35,3 +35,21 @@ test('判定しても元の盤面は変更されない', () => {
 
   assert.equal(shogi.toSFENString(1), before);
 });
+
+test('歩を打って即詰みにする打ち歩詰めを拒否する', () => {
+  const shogi = position('4k4/9/3RGR3/9/9/9/9/9/K8 b P 1');
+
+  assert.equal(isLegalDrop(shogi, Shogi, 5, 2, 'FU', Color.Black), false);
+});
+
+test('相手玉に逃げ道がある歩打ち王手は許可する', () => {
+  const shogi = position('4k4/9/4GR3/9/9/9/9/9/K8 b P 1');
+
+  assert.equal(isLegalDrop(shogi, Shogi, 5, 2, 'FU', Color.Black), true);
+});
+
+test('歩以外の駒を打つ詰みは許可する', () => {
+  const shogi = position('4k4/9/3RGR3/9/9/9/9/9/K8 b G 1');
+
+  assert.equal(isLegalDrop(shogi, Shogi, 5, 2, 'KI', Color.Black), true);
+});
