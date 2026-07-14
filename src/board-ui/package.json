@@ -4,11 +4,11 @@
   "description": "マイルストーン1「盤面表示・駒移動・エンジンとの対局」の実装です。 RPG要素（戦形・アイテム・スキル・難易度・ティラノスクリプト連携）はスコープ外 （M2以降）。詳細は `docs/PROJECT_PLAN.md` の M1 セクション参照。",
   "main": "main.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node --test test/*.test.mjs"
   },
   "keywords": [],
   "author": "",
-  "license": "ISC",
+  "license": "GPL-3.0",
   "dependencies": {
     "shogi.js": "^5.5.0",
     "yaneuraou.wasm": "^0.1.2"
