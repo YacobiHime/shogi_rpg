@@ -20,6 +20,7 @@
 // TypeScriptの型としてのみ存在するため実行時オブジェクトとしてimportできない。
 import shogiLib from './vendor/shogi.esm.js';
 const { Shogi, Color, Piece, kindToString } = shogiLib;
+export { Color };
 
 const BOARD_SIZE = 9;
 const CELL = 56; // px相当のSVG座標単位
@@ -41,6 +42,7 @@ export class BoardView {
     this.shogi = new Shogi(); // 平手初期局面で開始（コンストラクタ引数はshogi.js仕様に従い要確認）
     this.selected = null; // { x, y } または { hand: { color, kind } }
     this.humanColor = Color.Black; // M1では人間=先手固定
+    this.locked = false; // 対局終了後の入力を無効化する
     this._buildSvg();
     this.render();
   }
@@ -166,14 +168,20 @@ export class BoardView {
       text.textContent = `${color === Color.Black ? '先手' : '後手'}持ち駒: ${label}`;
       text.style.cursor = hand.length ? 'pointer' : 'default';
       text.addEventListener('click', () => {
-        if (!hand.length) return;
+        if (this.locked || !hand.length) return;
         this.selected = { hand: { color, kind: hand[0].kind } };
       });
       this.svg.appendChild(text);
     });
   }
 
+  /** 対局終了後に盤面クリックを無効化する */
+  lock() {
+    this.locked = true;
+  }
+
   _handleCellClick(x, y) {
+    if (this.locked) return;
     if (this.shogi.turn !== this.humanColor) return; // 自分の手番以外は無視
 
     if (this.selected && this.selected.hand) {
@@ -263,5 +271,55 @@ export class BoardView {
 
   toSfen() {
     return this.shogi.toSFENString(1); // TODO: 引数(手数)の扱いを要確認
+  }
+
+  /**
+   * colorに合法手が1つでもあるか判定する（詰み・持将棋判定用）。
+   *
+   * shogi.jsのgetMovesFrom/getDropsByは盤外・自駒取りのみ除外し、王手放置となる手を
+   * 除外しない（クラスコメント「盤外，自分の駒取りは除外．二歩，王手放置などはチェックせず．」参照）。
+   * そのため各候補手を一時的な盤面（SFEN経由で複製、本体には影響しない）に適用し、
+   * 適用後もcolor側の玉が王手されたままかをisCheck()で確認して真の合法手のみを数える。
+   */
+  hasLegalMoves(color) {
+    const sfen = this.shogi.toSFENString(1);
+
+    for (let x = 1; x <= BOARD_SIZE; x++) {
+      for (let y = 1; y <= BOARD_SIZE; y++) {
+        const piece = this.shogi.get(x, y);
+        if (!piece || piece.color !== color) continue;
+        const moves = this.shogi.getMovesFrom(x, y);
+        for (const move of moves) {
+          if (this._staysLegalAfterMove(sfen, x, y, move.to.x, move.to.y, color)) {
+            return true;
+          }
+        }
+      }
+    }
+
+    const drops = this.shogi.getDropsBy(color);
+    for (const drop of drops) {
+      if (this._staysLegalAfterDrop(sfen, drop.to.x, drop.to.y, drop.kind, color)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  _staysLegalAfterMove(sfen, fromX, fromY, toX, toY, color) {
+    const temp = new Shogi();
+    temp.initializeFromSFENString(sfen);
+    temp.editMode(true); // 手番チェックを無視して両者の手を試せるようにする
+    temp.move(fromX, fromY, toX, toY, false);
+    return !temp.isCheck(color);
+  }
+
+  _staysLegalAfterDrop(sfen, x, y, kind, color) {
+    const temp = new Shogi();
+    temp.initializeFromSFENString(sfen);
+    temp.editMode(true);
+    temp.drop(x, y, kind, color);
+    return !temp.isCheck(color);
   }
 }
