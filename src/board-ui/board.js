@@ -1,7 +1,7 @@
 /**
  * src/board-ui/board.js
  *
- * 盤面表示・駒移動UI（マイルストーン1: 最小構成）。
+ * 盤面表示・駒移動UI。
  *
  * ルール判定(合法手・成り・持ち駒・王手/詰み)は shogi.js (na2hiro/Shogi.js, MIT)
  * に委譲する。盤面の見た目(SVG描画)はこのファイルで自作する。
@@ -35,12 +35,15 @@ const USI_TO_KIND = { P: 'FU', L: 'KY', N: 'KE', S: 'GI', G: 'KI', B: 'KA', R: '
 export class BoardView {
   /**
    * @param {HTMLElement} container
-   * @param {{ onMove?: (usiMove: string) => void }} [callbacks]
+   * @param {{ onMove?: (usiMove: string) => void, startSfen?: string }} [callbacks]
    */
   constructor(container, callbacks = {}) {
     this.container = container;
     this.onMove = callbacks.onMove || (() => {});
-    this.shogi = new Shogi(); // 平手初期局面で開始（コンストラクタ引数はshogi.js仕様に従い要確認）
+    this.shogi = new Shogi();
+    if (callbacks.startSfen) {
+      this.shogi.initializeFromSFENString(callbacks.startSfen);
+    }
     this.selected = null; // { x, y } または { hand: { color, kind } }
     this.humanColor = Color.Black; // M1では人間=先手固定
     this.locked = false; // 対局終了後の入力を無効化する

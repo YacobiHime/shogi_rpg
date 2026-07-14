@@ -13,6 +13,9 @@ nav_order: 7
 ## [Unreleased]
 
 ### Added
+- `data/formations.json`: 最初の戦形マスタとして平手局面を追加
+- `src/board-ui/formations.mjs`: 戦形マスタの取得、スキーマ検証、IDによる選択を追加
+- `src/board-ui/test/formations.test.mjs`: 実データ、重複ID、相性参照、未知IDを確認するテストを追加
 - `src/board-ui/entering-king.mjs`: 先手28点・後手27点の入玉宣言について、玉の位置、
   敵陣の駒数、点数、王手状態、手番を評価する判定を追加
 - `src/board-ui/test/entering-king.test.mjs`: 入玉宣言の成立条件と不成立条件を確認する
@@ -31,6 +34,9 @@ nav_order: 7
 - `shogi.js`単体では判定されない打ち歩詰めを、プレイヤーが指せた問題を修正
 
 ### Changed
+- マイルストーン1を完了とし、マイルストーン2「RPG進行システム」を開始
+- 対局UIがURLクエリ`formation`で戦形を受け取り、マスタの開始SFENを盤面とエンジンの
+  双方へ適用するよう変更
 - `src/board-ui/main.js`: プレイヤーの入玉宣言ボタンを制御し、エンジンにも27点法を
   設定して双方の宣言勝ちを処理するよう変更
 - `src/board-ui/main.js`: 人間とエンジンの各着手後に千日手を判定し、引き分けまたは

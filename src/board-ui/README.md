@@ -1,8 +1,7 @@
-# M1: 対局UI最小構成
+# 対局UI
 
-マイルストーン1「盤面表示・駒移動・エンジンとの対局」の実装です。
-RPG要素（戦形・アイテム・スキル・難易度・ティラノスクリプト連携）はスコープ外
-（M2以降）。詳細は `docs/PROJECT_PLAN.md` の M1 セクション参照。
+マイルストーン1「盤面表示・駒移動・エンジンとの対局」の成果物を基盤として、
+マイルストーン2のRPG進行データとの連携を追加しています。
 
 ## 構成
 
@@ -11,6 +10,7 @@ src/engine/engine.js      … USI通信ラッパー（tools/m0-verification/inde
 src/board-ui/board.js     … 盤面描画・駒移動UI（shogi.jsをルールエンジンとして使用）
 src/board-ui/main.js      … 上記2つを繋ぐエントリポイント
 src/board-ui/entering-king.mjs … 27点法の入玉宣言条件を判定
+src/board-ui/formations.mjs … 戦形マスタの取得・検証・選択
 src/board-ui/index.html   … 検証用ページ
 src/board-ui/vendor/      … 外部ライブラリの配置場所（.gitignore対象、下記手順で用意）
 ```
@@ -80,9 +80,9 @@ cp node_modules/yaneuraou.wasm/yaneuraou.data ./yaneuraou.data
 満たすサーバーが必要。`tools/m0-verification-suisho5/server.js`を参考にした実装例を
 `src/board-ui/server.js`として用意すること（`.gitignore`対象、リポジトリには含めない）。
 
-**注意: サーバーのルートは`src/board-ui`ではなく`src/`にすること。**
-`main.js`が`../engine/engine.js`を相対importするため、`src/board-ui`だけを
-ドキュメントルートにすると`src/engine/engine.js`が`404`になる。
+**注意: サーバーのルートは`src/board-ui`や`src/`ではなく、プロジェクト直下にすること。**
+`main.js`が`src/engine/engine.js`を、`formations.mjs`が`data/formations.json`を読むため、
+それより下をドキュメントルートにするといずれかが`404`になる。
 
 ```bash
 cd src/board-ui
@@ -91,15 +91,22 @@ node server.js
 
 ### 4. ブラウザで動作確認
 
-サーバーのルートを`src/`にした場合:
+サーバーのルートをプロジェクト直下にした場合:
 ```
-http://localhost:<port>/board-ui/index.html
+http://localhost:<port>/src/board-ui/index.html
 ```
+
+戦形IDを指定する場合:
+```
+http://localhost:<port>/src/board-ui/index.html?formation=standard
+```
+
+戦形は`data/formations.json`へ追加する。指定した戦形の`start_sfen`が盤面とエンジンの
+両方へ渡され、未指定時は`standard`（平手）で開始する。
 
 ## 既知の未実装・要対応事項（このコードをベースに実装を進める際の引き継ぎ事項）
 
-- 本番評価関数（水匠5・hao）への切り替え時の`nnuePath`指定とローディングUI
-  （`isready`に1.3〜1.4秒かかる。`docs/AGENTS.md`6.参照）
+- 敵データに応じた本番評価関数（水匠5・hao）の`nnuePath`指定（M2で実装）
 - 駒・盤の本番用画像素材（現状はSVGの簡易図形と文字表示）
 
 `applyUsiMove()`のパーサー実装、盤面API呼び出し箇所（`shogi.get()`等）、空きマスへの

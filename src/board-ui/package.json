@@ -1,7 +1,7 @@
 {
   "name": "board-ui",
   "version": "1.0.0",
-  "description": "マイルストーン1「盤面表示・駒移動・エンジンとの対局」の実装です。 RPG要素（戦形・アイテム・スキル・難易度・ティラノスクリプト連携）はスコープ外 （M2以降）。詳細は `docs/PROJECT_PLAN.md` の M1 セクション参照。",
+  "description": "将棋RPGの対局UIとRPG進行データ連携",
   "main": "main.js",
   "scripts": {
     "test": "node --test test/*.test.mjs"

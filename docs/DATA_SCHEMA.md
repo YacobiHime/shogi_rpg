@@ -11,6 +11,8 @@ nav_order: 5
 
 ## 1. 敵データ（`data/enemies.json`）
 
+ファイルのルートは、以下のオブジェクトを要素に持つ配列とする。
+
 ```jsonc
 {
   "enemy_id": "chapter1_boss",       // string, 一意
@@ -28,6 +30,8 @@ nav_order: 5
 
 ## 2. 戦形（囲い）データ（`data/formations.json`）
 
+ファイルのルートは、以下のオブジェクトを要素に持つ配列とする。
+
 ```jsonc
 {
   "formation_id": "mino_gakoi",     // string, 一意
@@ -41,6 +45,8 @@ nav_order: 5
 ```
 
 ## 3. アイテム／スキルデータ（`data/items.json`）
+
+ファイルのルートは、以下のオブジェクトを要素に持つ配列とする。
 
 ```jsonc
 {
@@ -56,6 +62,8 @@ nav_order: 5
 ```
 
 ## 4. レベルアップ／解禁テーブル（`data/level_unlocks.json`）
+
+ファイルのルートは、以下のオブジェクトを要素に持つ配列とする。
 
 ```jsonc
 {

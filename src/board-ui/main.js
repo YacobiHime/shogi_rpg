@@ -1,16 +1,15 @@
 /**
  * src/board-ui/main.js
  *
- * M1「対局UIの最小構成」のエントリポイント。
+ * 対局UIのエントリポイント。
  * 盤面(BoardView)とエンジン(ShogiEngine)を繋ぎ、人間(先手) vs エンジン(後手)の
- * 対局を成立させる最小限のゲームループ。
- *
- * スコープ外（M2以降）: 戦形選択・駒落ち・アイテム/スキル・難易度連携・ティラノ結線。
+ * 対局を成立させるゲームループ。M2では戦形マスタから開始局面を読み込む。
  */
 
 import { ShogiEngine } from '../engine/engine.js';
 import { BoardView, Color } from './board.js';
 import { evaluateEnteringKingDeclaration } from './entering-king.mjs';
+import { loadFormation } from './formations.mjs';
 import { RepetitionTracker } from './repetition.mjs';
 
 const statusEl = document.getElementById('status');
@@ -43,6 +42,11 @@ resultCloseButton.addEventListener('click', () => {
 });
 
 async function main() {
+  const formationId = new URLSearchParams(window.location.search).get('formation') || 'standard';
+  setStatus('戦形データを読み込み中...');
+  setLoading('戦形データを読み込み中...');
+  const formation = await loadFormation(formationId);
+
   setStatus('エンジンを初期化中...');
   setLoading('エンジンを初期化中...');
 
@@ -63,6 +67,7 @@ async function main() {
   loadingOverlay.hidden = true;
 
   const board = new BoardView(document.getElementById('board-container'), {
+    startSfen: formation.start_sfen,
     onMove: async (usiMove) => {
       await onHumanMove(usiMove);
     },
@@ -132,7 +137,8 @@ async function main() {
     }
 
     setStatus('エンジン思考中...');
-    engine.setPosition('startpos moves ' + moveHistory.join(' '));
+    const moves = moveHistory.length ? ' moves ' + moveHistory.join(' ') : '';
+    engine.setPosition(formation.start_sfen + moves);
 
     const { move } = await engine.go({ movetime: 1000 });
 
@@ -165,11 +171,11 @@ async function main() {
     }
 
     updateDeclareWinButton();
-    setStatus('あなたの番です');
+    setStatus(`${formation.name}：あなたの番です`);
   }
 
   updateDeclareWinButton();
-  setStatus('あなたの番です（先手）');
+  setStatus(`${formation.name}：あなたの番です（先手）`);
 }
 
 main().catch((e) => {
