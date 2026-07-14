@@ -19,6 +19,7 @@
 // 駒種(Kind)は実行時にはただの文字列("FU","NY","NK","NG"等)であり、
 // TypeScriptの型としてのみ存在するため実行時オブジェクトとしてimportできない。
 import shogiLib from './vendor/shogi.esm.js';
+import { isLegalDrop, isLegalMove } from './legal-moves.mjs';
 const { Shogi, Color, Piece, kindToString } = shogiLib;
 export { Color };
 
@@ -260,6 +261,11 @@ export class BoardView {
       }
     }
 
+    // getMovesFrom()は王手放置を除外しないため、複製盤面で着手後の自玉を確認する。
+    if (!isLegalMove(
+      this.shogi, Shogi, fromX, fromY, toX, toY, promote, this.humanColor
+    )) return;
+
     this.shogi.move(fromX, fromY, toX, toY, promote);
     this.render();
     this.onMove(this._toUsiMove(fromX, fromY, toX, toY, promote));
@@ -306,6 +312,7 @@ export class BoardView {
 
   async _tryDrop(color, kind, x, y) {
     if (color !== this.humanColor) return;
+    if (!isLegalDrop(this.shogi, Shogi, x, y, kind, color)) return;
     try {
       this.shogi.drop(x, y, kind);
       this.render();
@@ -396,16 +403,12 @@ export class BoardView {
   _staysLegalAfterMove(sfen, fromX, fromY, toX, toY, color) {
     const temp = new Shogi();
     temp.initializeFromSFENString(sfen);
-    temp.editMode(true); // 手番チェックを無視して両者の手を試せるようにする
-    temp.move(fromX, fromY, toX, toY, false);
-    return !temp.isCheck(color);
+    return isLegalMove(temp, Shogi, fromX, fromY, toX, toY, false, color);
   }
 
   _staysLegalAfterDrop(sfen, x, y, kind, color) {
     const temp = new Shogi();
     temp.initializeFromSFENString(sfen);
-    temp.editMode(true);
-    temp.drop(x, y, kind, color);
-    return !temp.isCheck(color);
+    return isLegalDrop(temp, Shogi, x, y, kind, color);
   }
 }
