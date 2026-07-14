@@ -13,6 +13,10 @@ nav_order: 7
 ## [Unreleased]
 
 ### Added
+- `firebase.json`: HalfKP版WASMのPThread実行に必要なCOOP/COEP/CORP応答ヘッダーと、
+  対局UIへのルートリライトを設定
+- `tools/build-hosting.mjs`: 対局UI・エンジン・マスタ・配布許可済みNNUEだけを`dist/`へ
+  組み立て、敵マスタが参照するNNUEの配置漏れをデプロイ前に検出する処理を追加
 - `src/board-ui/engine-loader.mjs`: 敵の`nnue_file`に応じて通常版またはHalfKP noeval版の
   WASMローダーを動的に読み込む処理を追加
 - `src/board-ui/vendor/`: `@mizarjp/yaneuraou.halfkp.noeval` 7.6.3-alpha.0の本番配布用

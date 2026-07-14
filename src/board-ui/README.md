@@ -111,7 +111,29 @@ cd src/board-ui
 node server.js
 ```
 
-### 4. ブラウザで動作確認
+### 4. Firebase Hosting用ビルド・本番配信
+
+本番配信先は、COOP/COEP応答ヘッダーと64MB級のNNUEファイルを扱えるFirebase Hostingを使う。
+プロジェクト直下で次を実行すると、実行に必要なファイルだけが`dist/`へ出力される。
+
+```powershell
+node tools/build-hosting.mjs
+```
+
+`data/enemies.json`が参照する`nnue_file`が`assets/nnue/`にない場合、ビルドはエラーで停止する。
+Firebaseプロジェクトを作成してCLIへログインした後、次のコマンドでローカル確認と配信を行う。
+
+```powershell
+npx firebase-tools emulators:start --only hosting
+npx firebase-tools deploy --only hosting --project <FirebaseプロジェクトID>
+```
+
+公開後はレスポンスに`Cross-Origin-Opener-Policy: same-origin`と
+`Cross-Origin-Embedder-Policy: require-corp`が付き、ブラウザで`crossOriginIsolated === true`に
+なることを確認する。Firebase Hostingの無料転送枠は月10GBのため、64MB級NNUEを使う公開テストでは
+転送量にも注意する。
+
+### 5. ブラウザで動作確認
 
 サーバーのルートをプロジェクト直下にした場合:
 ```
