@@ -90,6 +90,19 @@ nav_order: 9
 - 使用箇所: /tools/m0-verification/ 配下での技術検証用
 - 追加日: 2026-07-11
 
+### shogi.js
+
+- 種別: 将棋ルールエンジン（JavaScriptライブラリ）
+- 入手元URL: https://github.com/na2hiro/Kifu-for-JS/tree/master/packages/shogi.js（npmパッケージ名: `shogi.js`）
+- 制作者: na2hiro 氏
+- ライセンス: **MIT**
+- 表記要否: 不要（MITのためクレジット表記は必須ではないが、慣行として掲載を推奨）
+- 使用箇所: 対局UIの合法手判定・成り／持ち駒・SFEN変換（`src/board-ui/board.js`）。
+  npm配布物にビルド済みESMバンドルが含まれないため、esbuildで単一ESMファイルに
+  バンドルした上で`src/board-ui/vendor/shogi.esm.js`として配置（`.gitignore`対象、
+  配布物には含まれる。手順は`src/board-ui/README.md`参照）
+- 追加日: 2026-07-14
+
 ## 評価関数（NNUEファイル）
 
 ### リゼロ評価関数

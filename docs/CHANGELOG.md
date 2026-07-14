@@ -168,18 +168,52 @@ nav_order: 7
   盤面の見た目（SVG描画）は自作する方針（README記載の技術スタック方針通り）。
   `kifu-for-js`自体はReact/MobX/react-dnd前提のため、本プロジェクトの
   素のJS/ティラノスクリプト構成には不採用とした
-- `board.js`内の`shogi.js`API呼び出し箇所は、正式なTypeDocドキュメントでの
-  確認が必要な暫定実装（`// TODO`コメントで明記）。実装を進める際は
-  `src/board-ui/README.md`のセットアップ手順を参照し、API仕様を突き合わせること
-- USI指し手文字列（`7g7f`, `P*5e`等）を盤面へ反映する`applyUsiMove()`は未実装。
-  次の作業で優先的に対応する
 
 ### 未着手（M1内の残タスク）
-- `applyUsiMove()`の実装（エンジンの指し手を盤面に反映）
 - 成り／不成り選択UI（仮の`window.confirm`から差し替え）
-- 持ち駒を打つ操作のUI改善
+- 持ち駒を打つ操作のドラッグ&ドロップ対応
 - 投了ボタン・詰み判定後の結果画面
 - 駒・盤の画像素材（現状は暫定のテキスト表示）
+- 本番評価関数（水匠5・hao）切り替え時のローディングUI
+
+---
+
+## [Unreleased] マイルストーン1: vendorセットアップとブラウザ実動作確認（2026-07-14）
+
+### Added
+- `src/board-ui/package.json`: `npm install shogi.js yaneuraou.wasm`用に作成
+- `src/board-ui/server.js`: COOP/COEPヘッダー対応の開発用HTTPサーバー
+  （`tools/m0-verification-suisho5/server.js`を移植、`.gitignore`対象）
+- `board.js`の`applyUsiMove()`実装（USI形式の指し手文字列 `7g7f` / `P*5e` /
+  成り`+`のパースと盤面反映）
+
+### Fixed
+- **shogi.jsは npm 配布物にビルド済みESMバンドルを含んでいない**ことが判明。
+  `cjs/`（CommonJS、複数ファイル分割）のみ配布されているため、esbuildで
+  ESM単一ファイルにバンドルして`vendor/shogi.esm.js`として配置する方式に変更
+  （`src/board-ui/README.md`参照）
+- `board.js`の下書き実装とshogi.jsの実APIとの不一致を修正:
+  - 駒種`Kind`は実行時にはオブジェクトとして存在しない（TypeScript型のみ）。
+    `Kind.FU`等への依存を排除し、`kindToString()`を使う表示に変更
+  - `shogi.board[x][y]`（0-indexed配列への誤った1-indexedアクセス）を
+    公開API`shogi.get(x, y)`に修正
+  - 成り確認ダイアログが常に出ない不具合（`getMovesFrom()`が`promote`
+    フィールドを返さない前提が誤りだった）を`Piece.canPromote(kind)`
+    ベースの判定に修正
+- **空きマスへのクリックが一切反応しない実装バグ**を修正。駒の`<g>`要素にしか
+  `click`リスナーを付けていなかったため、移動先が空マスの着手が成立しなかった。
+  全81マスに透明なクリック領域を敷く`_drawCellHitboxes()`を追加
+- `yaneuraou.data`が`vendor/`配下だけでは`404`になる問題に対応
+  （`.data`はHTMLドキュメント基準の相対パスで解決されるため、
+  `src/board-ui/`直下にも配置。詳細は`docs/CLAUDE.md`「WASM将棋エンジン統合時の
+  必須知識」7.参照）
+- 開発用サーバーのドキュメントルートを`src/board-ui`ではなく`src/`に変更
+  （`main.js`が`../engine/engine.js`を相対importするため）
+
+### Notes
+- Playwright（ヘッドレスChromium）でボードをクリック操作し、人間の着手→
+  エンジンの応答→手番復帰までの対局ループがブラウザ上で成立することを確認済み
+- `docs/CLAUDE.md`に上記`yaneuraou.data`のパス解決の落とし穴を追記
 
 ---
 

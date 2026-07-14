@@ -98,6 +98,13 @@
    arashigaoka軽量版（約28ms）に比べて大幅に長い。対局開始時にローディングUIで
    吸収する設計にすること。
 
+7. **評価関数データファイル(`yaneuraou.data`)は、`yaneuraou.js`と同じ場所ではなく
+   HTMLドキュメント（`index.html`）と同じ階層に配置する必要がある。**
+   `.wasm`はスクリプト自身の場所を基準に解決されるが、`.data`はドキュメントの場所を
+   基準にした相対パスでfetchされるため、`vendor/`配下にしか置いていないと
+   `404 Not Found`になる（M1でscript側とdata側でパス解決基準が異なることが判明、
+   `src/board-ui/README.md`のセットアップ手順参照）。
+
 詳細な検証ログ・計測数値は `docs/CHANGELOG.md` の「検証記録」セクションを参照。
 
 
