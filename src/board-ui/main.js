@@ -10,6 +10,7 @@
 
 import { ShogiEngine } from '../engine/engine.js';
 import { BoardView, Color } from './board.js';
+import { RepetitionTracker } from './repetition.mjs';
 
 const statusEl = document.getElementById('status');
 const resignButton = document.getElementById('resign-button');
@@ -43,8 +44,8 @@ async function main() {
   setLoading('エンジンを初期化中...');
 
   // M1では軽量版(arashigaoka)を使う想定。本番評価関数(水匠5/hao)へ差し替える場合は
-  // nnuePath を指定する（docs/CLAUDE.md 2. 参照）。isready応答に約1.3〜1.4秒かかるため
-  // （docs/CLAUDE.md 6. 参照）、init()〜ready()の間はローディングオーバーレイで隠す。
+  // nnuePath を指定する（docs/AGENTS.md 2. 参照）。isready応答に約1.3〜1.4秒かかるため
+  // （docs/AGENTS.md 6. 参照）、init()〜ready()の間はローディングオーバーレイで隠す。
   const engine = new ShogiEngine({
     factory: window.YaneuraOu,
   });
@@ -64,6 +65,24 @@ async function main() {
 
   let moveHistory = [];
   let gameOver = false;
+  const repetitionTracker = new RepetitionTracker(board.toSfen());
+
+  function finishByRepetition(result) {
+    if (!result) return false;
+    gameOver = true;
+
+    if (result.type === 'draw') {
+      setStatus('千日手が成立しました。');
+      showResult(board, '千日手により引き分けです。');
+    } else if (result.loserColor === Color.Black) {
+      setStatus('連続王手の千日手により反則負けです。');
+      showResult(board, '連続王手の千日手によりあなたの敗北です。');
+    } else {
+      setStatus('相手の連続王手により反則勝ちです。');
+      showResult(board, '連続王手の千日手によりあなたの勝利です。');
+    }
+    return true;
+  }
 
   resignButton.disabled = false;
   resignButton.addEventListener('click', () => {
@@ -76,6 +95,10 @@ async function main() {
   async function onHumanMove(usiMove) {
     if (gameOver) return;
     moveHistory.push(usiMove);
+
+    if (finishByRepetition(repetitionTracker.record(
+      board.toSfen(), Color.Black, board.isCheck(Color.White)
+    ))) return;
 
     // 人間の指し手でエンジン側(後手)が詰み・打つ手なしになっていないか確認する
     if (!board.hasLegalMoves(Color.White)) {
@@ -105,6 +128,10 @@ async function main() {
 
     moveHistory.push(move);
     board.applyUsiMove(move);
+
+    if (finishByRepetition(repetitionTracker.record(
+      board.toSfen(), Color.White, board.isCheck(Color.Black)
+    ))) return;
 
     // エンジンの指し手で人間(先手)が詰み・打つ手なしになっていないか確認する
     if (!board.hasLegalMoves(Color.Black)) {

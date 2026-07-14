@@ -366,6 +366,10 @@ export class BoardView {
     return this.shogi.toSFENString(1); // TODO: 引数(手数)の扱いを要確認
   }
 
+  isCheck(color) {
+    return this.shogi.isCheck(color);
+  }
+
   /**
    * colorに合法手が1つでもあるか判定する（詰み・持将棋判定用）。
    *
