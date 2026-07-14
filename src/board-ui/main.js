@@ -16,9 +16,15 @@ const resignButton = document.getElementById('resign-button');
 const resultOverlay = document.getElementById('result-overlay');
 const resultMessageEl = document.getElementById('result-message');
 const resultCloseButton = document.getElementById('result-close');
+const loadingOverlay = document.getElementById('loading-overlay');
+const loadingMessageEl = document.getElementById('loading-message');
 
 function setStatus(text) {
   statusEl.textContent = text;
+}
+
+function setLoading(text) {
+  loadingMessageEl.textContent = text;
 }
 
 function showResult(board, message) {
@@ -34,17 +40,21 @@ resultCloseButton.addEventListener('click', () => {
 
 async function main() {
   setStatus('エンジンを初期化中...');
+  setLoading('エンジンを初期化中...');
 
   // M1では軽量版(arashigaoka)を使う想定。本番評価関数(水匠5/hao)へ差し替える場合は
-  // nnuePath を指定する（docs/CLAUDE.md 2. 参照）。
+  // nnuePath を指定する（docs/CLAUDE.md 2. 参照）。isready応答に約1.3〜1.4秒かかるため
+  // （docs/CLAUDE.md 6. 参照）、init()〜ready()の間はローディングオーバーレイで隠す。
   const engine = new ShogiEngine({
     factory: window.YaneuraOu,
   });
 
   await engine.init();
   setStatus('エンジン初期化完了。isready送信中...');
+  setLoading('評価関数を解析中...');
   await engine.ready();
   engine.newGame();
+  loadingOverlay.hidden = true;
 
   const board = new BoardView(document.getElementById('board-container'), {
     onMove: async (usiMove) => {
@@ -113,4 +123,5 @@ async function main() {
 main().catch((e) => {
   console.error(e);
   setStatus('エラーが発生しました: ' + e.message);
+  setLoading('エラーが発生しました: ' + e.message);
 });
