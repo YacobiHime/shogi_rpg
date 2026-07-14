@@ -23,6 +23,9 @@
  *   評価関数ファイル(nn.bin等)のURL。本番エンジン(水匠5/hao)では必須。
  *   軽量版(arashigaoka)のように評価関数がwasm.data内に同梱されている場合は不要。
  * @property {string} [nnueVirtualPath] 仮想FS上の書き込み先パス（省略時 '/nn.bin'）
+ * @property {typeof fetch} [fetchImpl] 評価関数の取得処理（テスト差し替え用）
+ * @property {(details: { path: string, error: Error }) => void} [onNnueFallback]
+ *   評価関数を取得できず、内蔵評価関数へフォールバックした際の通知先。
  */
 
 export class ShogiEngine {
@@ -31,6 +34,9 @@ export class ShogiEngine {
     this.factory = options.factory;
     this.nnuePath = options.nnuePath || null;
     this.nnueVirtualPath = options.nnueVirtualPath || '/nn.bin';
+    this.fetchImpl = options.fetchImpl || fetch;
+    this.onNnueFallback = options.onNnueFallback || null;
+    this.activeNnuePath = null;
     this.instance = null;
     /** @type {((line: string) => void)[]} */
     this._listeners = [];
@@ -63,8 +69,24 @@ export class ShogiEngine {
       // CLAUDE.md 2. の注意事項:
       // preRunフックでモジュール初期化前に仮想ファイルシステムへ書き込む。
       // 初期化後にFS.writeFile()すると別スレッドから見えず失敗する。
-      const nnBytes = new Uint8Array(await (await fetch(this.nnuePath)).arrayBuffer());
-      moduleArgs.preRun.push((mod) => mod.FS.writeFile(this.nnueVirtualPath, nnBytes));
+      try {
+        const response = await this.fetchImpl(this.nnuePath);
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+        const nnBytes = new Uint8Array(await response.arrayBuffer());
+        if (nnBytes.byteLength === 0) {
+          throw new Error('評価関数ファイルが空です');
+        }
+        moduleArgs.preRun.push((mod) => mod.FS.writeFile(this.nnueVirtualPath, nnBytes));
+        this.activeNnuePath = this.nnuePath;
+      } catch (cause) {
+        const error = cause instanceof Error ? cause : new Error(String(cause));
+        this.activeNnuePath = null;
+        if (this.onNnueFallback) {
+          this.onNnueFallback({ path: this.nnuePath, error });
+        }
+      }
     }
 
     this.instance = await this.factory(moduleArgs);

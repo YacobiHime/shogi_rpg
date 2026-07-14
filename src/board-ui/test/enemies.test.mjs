@@ -32,6 +32,13 @@ test('ノード上限は1以上の整数を必須とする', async () => {
   assert.throws(() => validateEnemies([{ ...enemy, node_limit: 0 }]), /node_limit/);
 });
 
+test('nnue_fileにディレクトリや親ディレクトリ参照を指定できない', async () => {
+  const [enemy] = await readJson(enemiesUrl);
+
+  assert.throws(() => validateEnemies([{ ...enemy, nnue_file: '../nn.bin' }]), /nnue_file/);
+  assert.throws(() => validateEnemies([{ ...enemy, nnue_file: 'eval/nn.bin' }]), /nnue_file/);
+});
+
 test('未定義の戦形参照を拒否する', async () => {
   const [enemy] = await readJson(enemiesUrl);
 

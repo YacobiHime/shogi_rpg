@@ -18,7 +18,7 @@ nav_order: 5
   "enemy_id": "chapter1_boss",       // string, 一意
   "name": "村の道場主",               // string, 表示名
   "chapter": 1,                       // number, 登場章
-  "nnue_file": null,                  // string | null, 評価関数ファイル名。nullはエンジン内蔵評価関数
+  "nnue_file": null,                  // string | null, assets/nnue内の評価関数ファイル名。nullは内蔵評価関数
   "max_think_time_ms": 10000,         // positive integer, 最大思考時間（安全上限）
   "node_limit": 10000,                // positive integer, 強さの基準となる探索ノード数上限
   "move_rank": { "min": 1, "max": 1 },// 候補手のうち何番目から選択するか（1=最善手のみ）
@@ -27,6 +27,13 @@ nav_order: 5
   "start_sfen_override": null         // string | null, 戦形以外で開始局面を直接指定したい場合
 }
 ```
+
+- `nnue_file`にはディレクトリを含まないファイル名だけを指定する。対局UIは
+  `assets/nnue/<nnue_file>`として解決し、モジュール初期化前に仮想FSの`/nn.bin`へ書き込む
+- 指定ファイルが未配置、取得失敗、または空ファイルの場合は、対局を中断せずエンジン内蔵評価関数へ
+  フォールバックする
+- 評価関数は使用するWASMエンジンとNNUEアーキテクチャが一致し、再配布条件を確認済みのものに限る。
+  素材追加時は`docs/ASSETS_CREDITS.md`も更新する
 
 ## 2. 戦形（囲い）データ（`data/formations.json`）
 

@@ -83,6 +83,11 @@ engine.postMessage("go nodes " + enemyConfig.nodeLimit);
 通常は`node_limit`まで探索させ、`max_think_time_ms`へ到達した場合だけ`stop`を送る。これにより、
 端末が高速なほど敵が強くなる問題を抑えつつ、低速端末で思考が終わらない事態を防ぐ。
 
+`nnue_file`が指定された場合、対局UIはファイル名を`assets/nnue/`配下のURLへ解決し、
+エンジン初期化前の`preRun`で仮想FSの`/nn.bin`へ配置する。`null`の場合、および指定ファイルが
+未配置・取得失敗・空ファイルの場合はエンジン内蔵評価関数を使用する。外部評価関数はWASMビルドと
+NNUEアーキテクチャが一致するものに限り、実ファイルの追加時に再配布条件を確認する。
+
 ```json
 {
   "enemy_id": "chapter1_boss",

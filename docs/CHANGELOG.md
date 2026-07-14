@@ -13,6 +13,8 @@ nav_order: 7
 ## [Unreleased]
 
 ### Added
+- `src/board-ui/nnue.mjs` / `test/nnue.test.mjs`: 敵の`nnue_file`を`assets/nnue/`配下の
+  安全なURLへ解決する処理とテストを追加
 - `src/board-ui/move-selection.mjs` / `test/move-selection.test.mjs`: 敵の`move_rank`へ
   難易度補正を適用し、利用可能なMultiPV候補から指し手を選ぶ処理とテストを追加
 - `data/difficulty.json`: やさしい／ふつう／むずかしいのノード数倍率と手のランク補正を追加
@@ -42,6 +44,8 @@ nav_order: 7
 - `shogi.js`単体では判定されない打ち歩詰めを、プレイヤーが指せた問題を修正
 
 ### Changed
+- 対局UIが敵の`nnue_file`をエンジン初期化へ渡し、取得した評価関数を`preRun`で仮想FSへ
+  書き込むよう変更。未指定・未配置・取得失敗・空ファイルの場合は内蔵評価関数へフォールバックする
 - `src/engine/engine.js`: `info multipv ... pv ...`の最終候補を順位別に収集し、
   `bestmove`とともに返すよう変更。対局UIは実効最大ランクをMultiPVへ設定し、候補不足時は
   利用可能な範囲へ縮退して指し手を選ぶ

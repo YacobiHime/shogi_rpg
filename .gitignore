@@ -53,6 +53,8 @@ src/board-ui/server.js
 /*.bin
 /**/*.bin
 !ShogiAI/*/eval/*.bin
+# 本番配布用の評価関数はライセンス確認後にassets/nnueへ配置する
+!assets/nnue/*.bin
 
 # --- OS・エディタ関連 ---
 .vscode/

@@ -14,6 +14,7 @@ src/board-ui/formations.mjs … 戦形マスタの取得・検証・選択
 src/board-ui/enemies.mjs … 敵マスタの取得・検証・選択
 src/board-ui/difficulty.mjs … 難易度マスタの取得・検証・ノード数補正
 src/board-ui/move-selection.mjs … 手のランク補正とMultiPV候補からの指し手選択
+src/board-ui/nnue.mjs     … 敵の評価関数ファイル名から配布URLを解決
 src/board-ui/index.html   … 検証用ページ
 src/board-ui/vendor/      … 外部ライブラリの配置場所（.gitignore対象、下記手順で用意）
 ```
@@ -116,6 +117,11 @@ http://localhost:<port>/src/board-ui/index.html?formation=standard&enemy=trainin
 強さは`node_limit`を主基準とし、`max_think_time_ms`は低速端末で思考が終わらない場合の
 安全上限として使う。
 
+`nnue_file`が`null`ならエンジン内蔵評価関数を使用する。ファイル名を指定する場合は、
+ライセンスとWASMエンジンとのNNUEアーキテクチャ一致を確認した評価関数を
+`assets/nnue/<nnue_file>`へ配置する。指定ファイルが未配置、取得失敗、または空の場合は
+内蔵評価関数へフォールバックする。ディレクトリを含む値は敵マスタの検証で拒否される。
+
 難易度も指定する場合:
 ```
 http://localhost:<port>/src/board-ui/index.html?formation=standard&enemy=training_partner&difficulty=easy
@@ -129,7 +135,7 @@ http://localhost:<port>/src/board-ui/index.html?formation=standard&enemy=trainin
 
 ## 既知の未実装・要対応事項（このコードをベースに実装を進める際の引き継ぎ事項）
 
-- 敵データに応じた本番評価関数（水匠5・hao）の`nnuePath`指定（M2で実装）
+- 水匠5・haoと互換性のあるHalfKP noeval版WASMを本番配布用vendorへ組み込む手順の確定
 - 駒・盤の本番用画像素材（現状はSVGの簡易図形と文字表示）
 
 `applyUsiMove()`のパーサー実装、盤面API呼び出し箇所（`shogi.get()`等）、空きマスへの
@@ -143,7 +149,8 @@ npm test
 ```
 
 敵・戦形・難易度マスタのスキーマと参照整合性、難易度を反映した実効ノード数と手のランク範囲、
-MultiPV候補の収集・ランダム選択・候補不足時のフォールバック、ノード数基準のUSIコマンドと
+MultiPV候補の収集・ランダム選択・候補不足時のフォールバック、NNUEのパス解決・初期化前注入・
+未配置時の内蔵評価へのフォールバック、ノード数基準のUSIコマンドと
 最大思考時間による停止処理を確認する。合法手フィルターが王手放置の盤上移動・持ち駒打ちと打ち歩詰めを拒否し、通常の
 歩打ち王手や歩以外の駒を打つ詰みは許可すること、および通常の千日手と連続王手による
 千日手を正しく区別することをNode.jsの組み込みテストランナーで確認する。

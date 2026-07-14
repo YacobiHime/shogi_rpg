@@ -13,6 +13,61 @@ function initializedEngine(commands) {
   return engine;
 }
 
+function engineFactory(capture) {
+  return async (moduleArgs) => {
+    capture.moduleArgs = moduleArgs;
+    let listener;
+    return {
+      addMessageListener(nextListener) {
+        listener = nextListener;
+      },
+      postMessage(command) {
+        if (command === 'usi') queueMicrotask(() => listener('usiok'));
+      },
+    };
+  };
+}
+
+test('取得した評価関数を初期化前に仮想FSへ書き込む', async () => {
+  const capture = {};
+  const bytes = Uint8Array.from([1, 2, 3]);
+  const engine = new ShogiEngine({
+    factory: engineFactory(capture),
+    nnuePath: '../../assets/nnue/hao.bin',
+    fetchImpl: async () => ({
+      ok: true,
+      arrayBuffer: async () => bytes.buffer,
+    }),
+  });
+
+  await engine.init();
+  const writes = [];
+  capture.moduleArgs.preRun[0]({
+    FS: { writeFile: (path, contents) => writes.push([path, [...contents]]) },
+  });
+
+  assert.deepEqual(writes, [['/nn.bin', [1, 2, 3]]]);
+  assert.equal(engine.activeNnuePath, '../../assets/nnue/hao.bin');
+});
+
+test('評価関数が未配置なら内蔵評価関数で初期化を続行する', async () => {
+  const capture = {};
+  let fallback;
+  const engine = new ShogiEngine({
+    factory: engineFactory(capture),
+    nnuePath: '../../assets/nnue/missing.bin',
+    fetchImpl: async () => ({ ok: false, status: 404 }),
+    onNnueFallback: (details) => { fallback = details; },
+  });
+
+  await engine.init();
+
+  assert.deepEqual(capture.moduleArgs.preRun, []);
+  assert.equal(engine.activeNnuePath, null);
+  assert.equal(fallback.path, '../../assets/nnue/missing.bin');
+  assert.match(fallback.error.message, /HTTP 404/);
+});
+
 test('ノード数だけをUSIのgoコマンドへ渡す', async () => {
   const commands = [];
   const engine = initializedEngine(commands);

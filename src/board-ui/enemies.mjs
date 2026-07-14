@@ -61,6 +61,10 @@ export function validateEnemies(data, formationIds) {
     assertString(enemy.enemy_id, 'enemy_id', index);
     assertString(enemy.name, 'name', index);
     assertNullableString(enemy.nnue_file, 'nnue_file', index);
+    if (enemy.nnue_file !== null
+      && (enemy.nnue_file === '.' || enemy.nnue_file === '..' || /[\\/]/.test(enemy.nnue_file))) {
+      throw new Error(`敵データ[${index}].nnue_fileにはディレクトリを含めないでください`);
+    }
     assertNullableString(enemy.handicap, 'handicap', index);
     assertNullableString(enemy.start_sfen_override, 'start_sfen_override', index);
     validateSfen(enemy.start_sfen_override, 'start_sfen_override', index);

@@ -13,6 +13,7 @@ import { evaluateEnteringKingDeclaration } from './entering-king.mjs';
 import { loadEnemy } from './enemies.mjs';
 import { loadFormation } from './formations.mjs';
 import { calculateEffectiveMoveRank, selectMoveByRank } from './move-selection.mjs';
+import { resolveNnuePath } from './nnue.mjs';
 import { RepetitionTracker } from './repetition.mjs';
 
 const statusEl = document.getElementById('status');
@@ -64,15 +65,18 @@ async function main() {
     enemy.move_rank,
     difficulty.move_rank_max_bonus
   );
+  const nnuePath = resolveNnuePath(enemy.nnue_file);
 
   setStatus('エンジンを初期化中...');
   setLoading('エンジンを初期化中...');
 
-  // M1では軽量版(arashigaoka)を使う想定。本番評価関数(水匠5/hao)へ差し替える場合は
-  // nnuePath を指定する（docs/AGENTS.md 2. 参照）。isready応答に約1.3〜1.4秒かかるため
-  // （docs/AGENTS.md 6. 参照）、init()〜ready()の間はローディングオーバーレイで隠す。
   const engine = new ShogiEngine({
     factory: window.YaneuraOu,
+    nnuePath,
+    onNnueFallback: ({ path, error }) => {
+      console.warn(`評価関数 ${path} を取得できないため内蔵評価関数を使用します`, error);
+      setLoading('評価関数を取得できないため、内蔵評価関数を使用します...');
+    },
   });
 
   await engine.init();
