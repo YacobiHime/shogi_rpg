@@ -20,11 +20,38 @@ import { RepetitionTracker } from './repetition.mjs';
 const statusEl = document.getElementById('status');
 const resignButton = document.getElementById('resign-button');
 const declareWinButton = document.getElementById('declare-win-button');
+const restartButton = document.getElementById('restart-button');
+const connectionStatusEl = document.getElementById('connection-status');
 const resultOverlay = document.getElementById('result-overlay');
 const resultMessageEl = document.getElementById('result-message');
 const resultCloseButton = document.getElementById('result-close');
+const resultRetryButton = document.getElementById('result-retry');
 const loadingOverlay = document.getElementById('loading-overlay');
 const loadingMessageEl = document.getElementById('loading-message');
+const loadingSpinner = document.getElementById('loading-spinner');
+const loadingRetryButton = document.getElementById('loading-retry');
+let wakeLock = null;
+
+function reloadPage() {
+  window.location.reload();
+}
+
+function updateConnectionStatus() {
+  connectionStatusEl.hidden = navigator.onLine;
+}
+
+async function requestScreenWakeLock() {
+  if (wakeLock || !navigator.wakeLock || document.visibilityState !== 'visible') return;
+  try {
+    wakeLock = await navigator.wakeLock.request('screen');
+    wakeLock.addEventListener('release', () => {
+      wakeLock = null;
+    });
+  } catch (error) {
+    // Wake Lock非対応・省電力設定等でも対局機能には影響させない。
+    console.warn('画面スリープの抑止を有効にできませんでした', error);
+  }
+}
 
 function setStatus(text) {
   statusEl.textContent = text;
@@ -45,6 +72,19 @@ function showResult(board, message) {
 resultCloseButton.addEventListener('click', () => {
   resultOverlay.hidden = true;
 });
+
+restartButton.addEventListener('click', () => {
+  if (window.confirm('現在の対局を終了して、最初からやり直しますか？')) reloadPage();
+});
+resultRetryButton.addEventListener('click', reloadPage);
+loadingRetryButton.addEventListener('click', reloadPage);
+window.addEventListener('online', updateConnectionStatus);
+window.addEventListener('offline', updateConnectionStatus);
+document.addEventListener('pointerdown', requestScreenWakeLock, { once: true });
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') requestScreenWakeLock();
+});
+updateConnectionStatus();
 
 async function main() {
   const params = new URLSearchParams(window.location.search);
@@ -214,5 +254,10 @@ async function main() {
 main().catch((e) => {
   console.error(e);
   setStatus('エラーが発生しました: ' + e.message);
-  setLoading('エラーが発生しました: ' + e.message);
+  setLoading(
+    '読み込みに失敗しました。通信状況を確認して「再試行」を押してください。' +
+    `（${e.message}）`
+  );
+  loadingSpinner.hidden = true;
+  loadingRetryButton.hidden = false;
 });

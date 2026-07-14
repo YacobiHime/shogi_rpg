@@ -13,6 +13,9 @@ nav_order: 7
 ## [Unreleased]
 
 ### Added
+- 文化祭等の展示運用向けに、対局の再開始、結果画面からの再挑戦、初期化失敗時の再試行、
+  オフライン案内、対応ブラウザでの画面スリープ抑止を追加
+- `docs/CULTURAL_FESTIVAL_RUNBOOK.md`: 展示開始前の確認と、問題発生時の復旧手順を追加
 - `firebase.json`: HalfKP版WASMのPThread実行に必要なCOOP/COEP/CORP応答ヘッダーと、
   対局UIへのルートリライトを設定
 - `tools/build-hosting.mjs`: 対局UI・エンジン・マスタ・配布許可済みNNUEだけを`dist/`へ
