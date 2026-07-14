@@ -7,7 +7,8 @@
  */
 
 import { ShogiEngine } from '../engine/engine.js';
-import { BoardView, Color } from './board.js';
+// クエリを更新すると、展示端末に残った旧版の盤面描画コードを確実に置き換えられる。
+import { BoardView, Color } from './board.js?v=selection-highlights-1';
 import { calculateEffectiveNodeLimit, loadDifficulty } from './difficulty.mjs';
 import { evaluateEnteringKingDeclaration } from './entering-king.mjs';
 import { loadEngineFactories } from './engine-loader.mjs';

@@ -20,9 +20,20 @@ test('Firebase Hostingのルート書き換え後もUI資産を正しいパス�
   assert.equal(baseHref, '/src/board-ui/');
 
   const documentBase = new URL(baseHref, 'https://example.test/');
-  assert.equal(new URL('./main.js', documentBase).pathname, '/src/board-ui/main.js');
+  const mainScript = indexHtml.match(/<script\s+type="module"\s+src="([^"]+)"/)?.[1];
+  assert.equal(new URL(mainScript, documentBase).pathname, '/src/board-ui/main.js');
+  assert.ok(new URL(mainScript, documentBase).search);
   assert.equal(
     new URL('../../data/enemies.json', documentBase).pathname,
     '/data/enemies.json'
   );
+
+  const codeCacheRule = firebaseConfig.hosting.headers.find(
+    ({ regex }) => regex === '.*\\.(html|js|mjs|json)$'
+  );
+  const rootCacheRule = firebaseConfig.hosting.headers.find(
+    ({ source }) => source === '/'
+  );
+  assert.match(codeCacheRule?.headers[0].value, /max-age=0/);
+  assert.match(rootCacheRule?.headers[0].value, /max-age=0/);
 });
