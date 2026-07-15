@@ -5,12 +5,19 @@ import test from 'node:test';
 const boardIndexUrl = new URL('../index.html', import.meta.url);
 const novelIndexUrl = new URL('../../novel/index.html', import.meta.url);
 const firebaseConfigUrl = new URL('../../../firebase.json', import.meta.url);
+const hostingBuildUrl = new URL('../../../tools/build-hosting.mjs', import.meta.url);
 
 test('Firebase Hostingのルートをノベルにし、対局UI資産も正しいパスから読む', async () => {
-  const [boardIndexHtml, novelIndexHtml, firebaseConfigText] = await Promise.all([
+  const [
+    boardIndexHtml,
+    novelIndexHtml,
+    firebaseConfigText,
+    hostingBuildText,
+  ] = await Promise.all([
     readFile(boardIndexUrl, 'utf8'),
     readFile(novelIndexUrl, 'utf8'),
     readFile(firebaseConfigUrl, 'utf8'),
+    readFile(hostingBuildUrl, 'utf8'),
   ]);
   const firebaseConfig = JSON.parse(firebaseConfigText);
   const rootRewrite = firebaseConfig.hosting.rewrites.find(
@@ -41,4 +48,6 @@ test('Firebase Hostingのルートをノベルにし、対局UI資産も正し�
   );
   assert.match(codeCacheRule?.headers[0].value, /max-age=0/);
   assert.match(rootCacheRule?.headers[0].value, /max-age=0/);
+  assert.match(hostingBuildText, /join\(ROOT, 'LICENSE'\)/);
+  assert.match(hostingBuildText, /join\(ROOT, 'docs', 'ASSETS_CREDITS\.md'\)/);
 });
