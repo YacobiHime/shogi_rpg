@@ -11,24 +11,25 @@ import { ShogiEngine } from '../engine/engine.js';
 import { BoardView, Color } from './board.js?v=selection-highlights-1';
 import {
   calculateEffectiveNodeLimit,
-  loadDifficulty,
   varyNodeLimit,
 } from './difficulty.mjs';
 import { evaluateEnteringKingDeclaration } from './entering-king.mjs';
 import { loadEngineFactories } from './engine-loader.mjs';
-import { loadEnemy } from './enemies.mjs';
-import { loadFormation } from './formations.mjs';
 import {
   getNodeDebuffMultiplier,
   getNodeDebuffSkills,
   getStandaloneAssistLimits,
-  loadItems,
-  selectItem,
 } from './items.mjs';
+import {
+  applyAssistLimitUpgrades,
+  getUnlockState,
+  parsePlayerLevel,
+} from './level-unlocks.mjs';
 import {
   buildMatchSearch,
   getAvailableFormations,
   loadMatchSetupOptions,
+  resolveMatchSelection,
 } from './match-setup.mjs';
 import { calculateEffectiveMoveRank, selectMoveByRank } from './move-selection.mjs';
 import { formatHintMove, getHintMove, TurnHistory } from './match-assists.mjs';
@@ -57,6 +58,7 @@ const setupEnemy = document.getElementById('setup-enemy');
 const setupFormation = document.getElementById('setup-formation');
 const setupDifficulty = document.getElementById('setup-difficulty');
 const setupItem = document.getElementById('setup-item');
+const setupNote = document.getElementById('setup-note');
 const gameScreen = document.getElementById('game-screen');
 let wakeLock = null;
 
@@ -77,13 +79,17 @@ async function showMatchSetup(params) {
   setStatus('対局条件を読み込み中...');
   setLoading('対局条件を読み込み中...');
   const options = await loadMatchSetupOptions();
+  const playerLevel = parsePlayerLevel(params.get('level'));
+  const unlockState = getUnlockState(options.levelUnlocks, playerLevel);
 
   showOptions(setupEnemy, options.enemies, 'enemy_id', 'name');
   showOptions(setupDifficulty, options.difficulties, 'difficulty_id', 'name');
   showOptions(setupItem, [
     { item_id: '', name: '装備しない' },
-    ...getNodeDebuffSkills(options.items),
+    ...getNodeDebuffSkills(options.items, playerLevel)
+      .filter((item) => unlockState.itemIds.has(item.item_id)),
   ], 'item_id', 'name');
+  setupNote.textContent = `プレイヤーレベル${playerLevel}／あなたが先手で対局します。`;
 
   const requestedEnemy = params.get('enemy');
   if (options.enemies.some((enemy) => enemy.enemy_id === requestedEnemy)) {
@@ -100,7 +106,9 @@ async function showMatchSetup(params) {
 
   function updateFormationOptions() {
     const enemy = options.enemies.find((item) => item.enemy_id === setupEnemy.value);
-    const available = getAvailableFormations(enemy, options.formations);
+    const available = getAvailableFormations(
+      enemy, options.formations, unlockState.formationIds
+    );
     const previous = setupFormation.value;
     showOptions(setupFormation, available, 'formation_id', 'name');
     const requested = params.get('formation') || previous || 'standard';
@@ -118,6 +126,7 @@ async function showMatchSetup(params) {
       formationId: setupFormation.value,
       difficultyId: setupDifficulty.value,
       itemId: setupItem.value,
+      playerLevel,
     }));
   });
 
@@ -196,20 +205,19 @@ async function main() {
   const enemyId = params.get('enemy') || 'training_partner';
   const difficultyId = params.get('difficulty') || 'normal';
   const itemId = params.get('item');
+  const playerLevel = parsePlayerLevel(params.get('level'));
   setStatus('対局データを読み込み中...');
   setLoading('対局データを読み込み中...');
-  const [formation, enemy, difficulty, items] = await Promise.all([
-    loadFormation(formationId),
-    loadEnemy(enemyId),
-    loadDifficulty(difficultyId),
-    loadItems(),
-  ]);
-  const equippedItem = selectItem(items, itemId);
-  if (equippedItem && equippedItem.type !== 'enemy_debuff_nodes') {
-    throw new Error(`この対局では探索量デバフスキルだけを装備できます: ${itemId}`);
-  }
+  const options = await loadMatchSetupOptions();
+  const { formation, enemy, difficulty, equippedItem, unlockState } =
+    resolveMatchSelection(options, {
+      formationId, enemyId, difficultyId, itemId, playerLevel,
+    });
+  const { items } = options;
   const nodeDebuffMultiplier = getNodeDebuffMultiplier(equippedItem);
-  const assistLimits = getStandaloneAssistLimits(items);
+  const assistLimits = applyAssistLimitUpgrades(
+    getStandaloneAssistLimits(items, playerLevel), unlockState
+  );
   const hintNodeLimit = calculateEffectiveNodeLimit(
     enemy.node_limit,
     difficulty.node_limit_mult

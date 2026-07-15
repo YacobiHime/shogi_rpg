@@ -1,0 +1,19 @@
+[
+  {
+    "level": 1,
+    "unlocks": {
+      "formations": [
+        "standard"
+      ],
+      "items": [
+        "node_limit_half",
+        "hint_ticket",
+        "undo_ticket"
+      ],
+      "skill_upgrades": {
+        "undo_max": 0,
+        "hint_max": 0
+      }
+    }
+  }
+]

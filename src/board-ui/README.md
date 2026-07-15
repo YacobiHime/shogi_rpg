@@ -174,6 +174,14 @@ http://localhost:<port>/src/board-ui/index.html?formation=standard&enemy=trainin
 http://localhost:<port>/src/board-ui/index.html?formation=standard&enemy=training_partner&difficulty=easy
 ```
 
+M3結線前のプレイヤーレベルを指定する場合は`level`を付ける（省略時は1）。準備画面には
+そのレベルで解禁済みの戦形・スキルだけを表示し、対局URLにも同じレベルを引き継ぐ。
+未解禁のIDをURLへ直接指定しても対局は開始しない。
+
+```
+http://localhost:<port>/src/board-ui/index.html?level=3
+```
+
 難易度は`data/difficulty.json`へ定義する。未指定時は`normal`（ふつう）を使用し、
 `node_limit_mult`を敵の`node_limit`へ乗算した実効ノード数で探索する。通常難易度では、
 敵が指すたびに実効ノード数を平均100%・標準偏差15%の正規分布（70%から130%に制限）で
