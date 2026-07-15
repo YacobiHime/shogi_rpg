@@ -129,24 +129,39 @@ nav_order: 5
   取得できた最大ランクまで範囲を縮め、指定した最小ランクにも届かない場合は取得できた最下位の手を使う
 - MultiPVの`info`行を取得できない場合は、エンジンの`bestmove`（第1候補）へフォールバックする
 
-## 6. 対局開始構成（対局UI起動時にティラノスクリプトから渡すパラメータ）
+## 6. ノベル・対局UI連携
+
+### 6.1 対局開始構成
 
 ```jsonc
 {
+  "match_id": "chapter1.training:1", // 1〜64文字。英数字と . _ : -
   "enemy_id": "chapter1_boss",
-  "difficulty": "normal",
-  "player_formation": "mino_gakoi",
-  "handicap_given_to_enemy": null,
-  "hints": { "used": 0, "max": 2 },
-  "undo": { "used": 0, "max": 3 },
-  "enemy_debuffs_applied": ["node_limit_half"]
+  "formation_id": "mino_gakoi",
+  "difficulty_id": "normal",
+  "item_id": "node_limit_half" // string | null
 }
 ```
 
-スタンドアロンの対局UIでは、現在装備する探索量デバフをURLクエリ
-`?item=<item_id>`でも受け取る。省略時は未装備とする。
-戦形とアイテムは現在のプレイヤーレベルで解禁済みでなければならず、URLから未解禁IDを
-直接指定した場合も対局を開始しない。
+iframe URLではそれぞれ`match_id`、`enemy`、`formation`、`difficulty`、`item`へ対応する。
+`bridge=tyrano`も必須とする。`item`は未装備時に省略する。戦形とアイテムは現在の
+プレイヤーレベルで解禁済みでなければならず、URLから未解禁IDを直接指定した場合も開始しない。
+
+### 6.2 対局結果メッセージ
+
+`postMessage`で返すメッセージは`SYSTEM_DESIGN.md` 2.1節の形式とする。`version`は現在`1`。
+`outcome`は`win | loss | draw`、`reason`は`checkmate | resignation | entering_king |
+repetition | perpetual_check`、`move_count`は0以上の整数とする。
+
+ティラノの永続変数`sf.shogi_rpg`には次を保存する。撃破済み敵の正本は
+`shogi_rpg_save.defeated_bosses`であり、ティラノ側へ同じ配列を重複保存しない。
+
+```jsonc
+{
+  "chapter_flags": { "defeated_training_partner": true },
+  "last_match_result": { /* 6.2の対局結果メッセージ */ }
+}
+```
 
 ## 7. セーブデータ（localStorage、`shogi_rpg_save`キー）
 

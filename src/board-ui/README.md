@@ -18,6 +18,9 @@ src/board-ui/match-assists.mjs … ヒント表示と待った用の手番履歴
 src/board-ui/move-selection.mjs … 手のランク補正とMultiPV候補からの指し手選択
 src/board-ui/nnue.mjs     … 敵の評価関数ファイル名から配布URLを解決
 src/board-ui/engine-loader.mjs … NNUEの有無に応じてWASMローダーを動的選択
+src/board-ui/novel-bridge.mjs … iframe対局からティラノへ終局結果を返却
+src/novel/match-bridge.mjs … 対局URL・結果メッセージ契約とiframe管理
+src/novel/tyrano-match-tag.mjs … ティラノの[shogi_match]タグ
 src/board-ui/index.html   … 検証用ページ
 src/board-ui/vendor/      … 静的配信に含めるブラウザ実行用の外部ライブラリ
 ```
@@ -209,6 +212,18 @@ http://localhost:<port>/src/board-ui/index.html?formation=standard&enemy=trainin
 
 - 駒・盤の本番用画像素材（現状はSVGの簡易図形と文字表示）
 - 次善手デバフなど、探索量削減以外の未対応アイテム／スキル
+
+## ティラノスクリプト連携
+
+Hosting用ビルド後、`http://localhost:8002/dist/index.html`を開くと`scenario/m4.ks`から
+`[shogi_match]`タグが対局UIを全画面iframeで起動する。タグの指定例:
+
+```ks
+[shogi_match match_id="chapter1.training:1" enemy="training_partner" formation="standard" difficulty="normal" item="node_limit_half"]
+```
+
+終局後は`f.match_result`で勝敗・終了理由・手数を分岐に使える。勝利時は
+`sf.shogi_rpg.chapter_flags`と共通セーブの`defeated_bosses`へ反映される。
 
 `applyUsiMove()`のパーサー実装、盤面API呼び出し箇所（`shogi.get()`等）、空きマスへの
 クリック判定（`_drawCellHitboxes()`）、王手放置となる着手と打ち歩詰めの拒否、

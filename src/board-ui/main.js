@@ -26,9 +26,10 @@ import {
 import { calculateEffectiveMoveRank, selectMoveByRank } from './move-selection.mjs';
 import { formatHintMove, getHintMove, TurnHistory } from './match-assists.mjs';
 import { resolveNnuePath } from './nnue.mjs';
+import { createNovelResultReporter } from './novel-bridge.mjs';
 import { RepetitionTracker } from './repetition.mjs';
 import { decodeSaveCode, encodeSaveCode, formatSaveCode } from '../save/save-code.mjs';
-import { normalizeSaveState } from '../save/save-state.mjs';
+import { normalizeSaveState, recordDefeatedBoss } from '../save/save-state.mjs';
 import { loadSaveState, saveSaveState } from '../save/save-storage.mjs';
 
 const statusEl = document.getElementById('status');
@@ -267,6 +268,7 @@ updateConnectionStatus();
 
 async function main() {
   const params = new URLSearchParams(window.location.search);
+  const novelResultReporter = createNovelResultReporter(window, params);
   const hasDirectMatch = ['formation', 'enemy', 'difficulty']
     .some((key) => params.has(key));
   if (!hasDirectMatch) {
@@ -371,6 +373,22 @@ async function main() {
     repetitionLength: repetitionTracker.length,
   });
 
+  function finishMatch({ outcome, reason, status, message }) {
+    if (gameOver) return false;
+    gameOver = true;
+    if (outcome === 'win' && novelResultReporter.embedded) {
+      playerSave = persistPlayerSave(recordDefeatedBoss(playerSave, enemyId));
+    }
+    setStatus(status);
+    showResult(board, message);
+    novelResultReporter.send({
+      outcome,
+      reason,
+      moveCount: moveHistory.length,
+    });
+    return true;
+  }
+
   function updateAssistButtons() {
     const humanTurn = board.isHumanTurn();
     const hintsRemaining = Math.max(0, assistLimits.hints - hintsUsed);
@@ -394,17 +412,28 @@ async function main() {
 
   function finishByRepetition(result) {
     if (!result) return false;
-    gameOver = true;
 
     if (result.type === 'draw') {
-      setStatus('千日手が成立しました。');
-      showResult(board, '千日手により引き分けです。');
+      finishMatch({
+        outcome: 'draw',
+        reason: 'repetition',
+        status: '千日手が成立しました。',
+        message: '千日手により引き分けです。',
+      });
     } else if (result.loserColor === Color.Black) {
-      setStatus('連続王手の千日手により反則負けです。');
-      showResult(board, '連続王手の千日手によりあなたの敗北です。');
+      finishMatch({
+        outcome: 'loss',
+        reason: 'perpetual_check',
+        status: '連続王手の千日手により反則負けです。',
+        message: '連続王手の千日手によりあなたの敗北です。',
+      });
     } else {
-      setStatus('相手の連続王手により反則勝ちです。');
-      showResult(board, '連続王手の千日手によりあなたの勝利です。');
+      finishMatch({
+        outcome: 'win',
+        reason: 'perpetual_check',
+        status: '相手の連続王手により反則勝ちです。',
+        message: '連続王手の千日手によりあなたの勝利です。',
+      });
     }
     return true;
   }
@@ -412,16 +441,22 @@ async function main() {
   resignButton.disabled = false;
   resignButton.addEventListener('click', () => {
     if (gameOver) return;
-    gameOver = true;
-    setStatus('あなたの投了により終了しました。');
-    showResult(board, 'あなたの投了により敗北しました。');
+    finishMatch({
+      outcome: 'loss',
+      reason: 'resignation',
+      status: 'あなたの投了により終了しました。',
+      message: 'あなたの投了により敗北しました。',
+    });
   });
 
   declareWinButton.addEventListener('click', () => {
     if (gameOver || !humanDeclarationStatus().eligible) return;
-    gameOver = true;
-    setStatus('入玉宣言が成立しました。');
-    showResult(board, '入玉宣言によりあなたの勝利です。');
+    finishMatch({
+      outcome: 'win',
+      reason: 'entering_king',
+      status: '入玉宣言が成立しました。',
+      message: '入玉宣言によりあなたの勝利です。',
+    });
   });
 
   hintButton.addEventListener('click', async () => {
@@ -498,9 +533,12 @@ async function main() {
 
     // 人間の指し手でエンジン側(後手)が詰み・打つ手なしになっていないか確認する
     if (!board.hasLegalMoves(Color.White)) {
-      gameOver = true;
-      setStatus('相手を詰ませました。');
-      showResult(board, 'あなたの勝利です（詰み）。');
+      finishMatch({
+        outcome: 'win',
+        reason: 'checkmate',
+        status: '相手を詰ませました。',
+        message: 'あなたの勝利です（詰み）。',
+      });
       return;
     }
 
@@ -515,15 +553,21 @@ async function main() {
     const { move } = selectMoveByRank(searchResult, effectiveMoveRank);
 
     if (move === 'resign') {
-      gameOver = true;
-      setStatus('エンジンが投了しました。勝利！');
-      showResult(board, 'エンジンの投了によりあなたの勝利です。');
+      finishMatch({
+        outcome: 'win',
+        reason: 'resignation',
+        status: 'エンジンが投了しました。勝利！',
+        message: 'エンジンの投了によりあなたの勝利です。',
+      });
       return;
     }
     if (move === 'win') {
-      gameOver = true;
-      setStatus('相手の入玉宣言が成立しました。');
-      showResult(board, '相手の入玉宣言によりあなたの敗北です。');
+      finishMatch({
+        outcome: 'loss',
+        reason: 'entering_king',
+        status: '相手の入玉宣言が成立しました。',
+        message: '相手の入玉宣言によりあなたの敗北です。',
+      });
       return;
     }
 
@@ -536,9 +580,12 @@ async function main() {
 
     // エンジンの指し手で人間(先手)が詰み・打つ手なしになっていないか確認する
     if (!board.hasLegalMoves(Color.Black)) {
-      gameOver = true;
-      setStatus('あなたは詰まされました。');
-      showResult(board, 'あなたの敗北です（詰み）。');
+      finishMatch({
+        outcome: 'loss',
+        reason: 'checkmate',
+        status: 'あなたは詰まされました。',
+        message: 'あなたの敗北です（詰み）。',
+      });
       return;
     }
 

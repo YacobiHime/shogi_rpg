@@ -145,3 +145,15 @@ export function normalizeSaveState(value, context, options = {}) {
 export function touchSaveState(state, now = new Date()) {
   return { ...state, version: SAVE_VERSION, updated_at: now.toISOString() };
 }
+
+/** 勝利した敵を、再読込や結果再送でも重複しない形で記録する。 */
+export function recordDefeatedBoss(state, bossId) {
+  if (typeof bossId !== 'string' || bossId.length === 0) {
+    throw new SaveDataError('bossIdは空でない文字列にしてください');
+  }
+  if (state.defeated_bosses.includes(bossId)) return state;
+  return {
+    ...state,
+    defeated_bosses: [...state.defeated_bosses, bossId],
+  };
+}

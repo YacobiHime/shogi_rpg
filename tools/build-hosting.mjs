@@ -20,7 +20,7 @@ function copyFile(source, destination) {
   copyFileSync(source, destination);
 }
 
-function copyTree(sourceRelativePath, includeFile) {
+function copyTree(sourceRelativePath, includeFile, destinationRelativePath = sourceRelativePath) {
   const source = join(ROOT, sourceRelativePath);
   if (!existsSync(source)) {
     throw new Error(`本番配布に必要なディレクトリがありません: ${sourceRelativePath}`);
@@ -39,7 +39,7 @@ function copyTree(sourceRelativePath, includeFile) {
     }
   }
 
-  visit(source, join(DIST, sourceRelativePath));
+  visit(source, join(DIST, destinationRelativePath));
 }
 
 function copyBoardUi() {
@@ -88,14 +88,19 @@ function build() {
   mkdirSync(DIST, { recursive: true });
 
   copyTree('data', (file) => extname(file) === '.json');
+  copyTree('scenario', () => true, join('data', 'scenario'));
+  copyTree('system', () => true, join('data', 'system'));
+  copyTree('tyrano', () => true);
   copyTree(join('src', 'engine'), (file) => extname(file) === '.js');
+  copyTree(join('src', 'novel'), (file) => ['.html', '.mjs'].includes(extname(file)));
   copyTree(join('src', 'save'), (file) => extname(file) === '.mjs');
   copyTree(join('assets', 'nnue'), (file) => extname(file) === '.bin');
   copyBoardUi();
+  copyFile(join(ROOT, 'src', 'novel', 'index.html'), join(DIST, 'index.html'));
   validateNnueAssets();
 
   console.log(`Firebase Hosting用ファイルをdistへ出力しました（${countFiles(DIST)}ファイル）`);
-  console.log('エントリ: /src/board-ui/index.html');
+  console.log('エントリ: /index.html（ノベル）');
 }
 
 build();

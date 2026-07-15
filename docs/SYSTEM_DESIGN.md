@@ -41,12 +41,38 @@ nav_order: 2
 
 ### 2.1 ティラノスクリプト ⇔ 対局UI
 
-- ティラノスクリプトのプラグイン機構から対局UIを起動し、対局条件（敵ID・難易度・プレイヤーが選択した戦形/アイテム構成）をパラメータとして渡す
-- 対局終了後、結果（勝敗・かかった手数など）を `sendPrompt` 的なコールバック、または `postMessage` / カスタムイベントでティラノ側に返す
-- 実装候補：
-  - a) 対局UIをティラノのシーン内にDOM/Canvasとして直接組み込む
-  - b) 対局UIを別ページとして実装し、`iframe` 埋め込み or 別画面遷移 + `postMessage` で結果を返す
-  - 開発初期は b) の疎結合構成で進め、UXの問題が出れば a) に寄せる方針を推奨（対局部分の独立したテストがしやすいため）
+- **iframe埋め込み + 同一オリジン`postMessage`方式を正式採用する。**
+  ティラノの`[shogi_match]`タグが全画面iframeを開き、対局UIは独立ページのまま動かす
+- 開始構成はiframe URLの`match_id`、`enemy`、`formation`、`difficulty`、任意の`item`で渡す。
+  対局UI側では通常の直接起動と同じマスタ・解禁検証を必ず通す
+- 終局時は対局UIから親へ、次のバージョン付きメッセージを1回だけ送る。親は
+  `event.origin === location.origin`、`event.source === iframe.contentWindow`、`match_id`の一致を検証する
+
+```js
+{
+  type: "shogi-rpg:match-result",
+  version: 1,
+  match_id: "chapter1.training:1",
+  match: {
+    enemy_id: "training_partner",
+    formation_id: "standard",
+    difficulty_id: "normal",
+    item_id: null
+  },
+  result: {
+    outcome: "win", // "win" | "loss" | "draw"
+    reason: "checkmate",
+    move_count: 57
+  }
+}
+```
+
+- `reason`は`checkmate`、`resignation`、`entering_king`、`repetition`、
+  `perpetual_check`のいずれかとする
+- iframe内の再読込とリトライではURLと`match_id`を維持する。進行は終局メッセージ受信後にだけ更新し、
+  勝利した敵は`shogi_rpg_save.defeated_bosses`へ重複なしで保存する
+- ティラノ側は直近結果を`f.match_result`へ、章分岐用の勝利フラグと直近結果を
+  `sf.shogi_rpg`へ保存してからシナリオを再開する。敗北・引き分けでは勝利フラグを立てない
 
 ### 2.2 対局UI ⇔ 将棋AIエンジン
 
@@ -272,7 +298,6 @@ const DIFFICULTY_MODIFIERS = {
 
 ## 7. 未確定・要検討事項
 
-- ティラノスクリプトと対局UIの連携方式（iframe / postMessage / 直接DOM統合）の最終決定
 - 戦形の相性表（三すくみ的な単純化か、実際の将棋理論に基づくものか）の設計
 - スマートフォンでのWASMエンジンの実速度検証
 - 駒・盤の素材（フリー素材の選定 or 自作）

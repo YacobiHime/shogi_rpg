@@ -9,7 +9,7 @@
     "rewrites": [
       {
         "source": "/",
-        "destination": "/src/board-ui/index.html"
+        "destination": "/index.html"
       }
     ],
     "headers": [

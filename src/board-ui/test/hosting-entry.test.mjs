@@ -2,25 +2,30 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
-const indexUrl = new URL('../index.html', import.meta.url);
+const boardIndexUrl = new URL('../index.html', import.meta.url);
+const novelIndexUrl = new URL('../../novel/index.html', import.meta.url);
 const firebaseConfigUrl = new URL('../../../firebase.json', import.meta.url);
 
-test('Firebase Hostingのルート書き換え後もUI資産を正しいパスから読み込む', async () => {
-  const [indexHtml, firebaseConfigText] = await Promise.all([
-    readFile(indexUrl, 'utf8'),
+test('Firebase Hostingのルートをノベルにし、対局UI資産も正しいパスから読む', async () => {
+  const [boardIndexHtml, novelIndexHtml, firebaseConfigText] = await Promise.all([
+    readFile(boardIndexUrl, 'utf8'),
+    readFile(novelIndexUrl, 'utf8'),
     readFile(firebaseConfigUrl, 'utf8'),
   ]);
   const firebaseConfig = JSON.parse(firebaseConfigText);
   const rootRewrite = firebaseConfig.hosting.rewrites.find(
     ({ source }) => source === '/'
   );
-  const baseHref = indexHtml.match(/<base\s+href="([^"]+)">/)?.[1];
+  const baseHref = boardIndexHtml.match(/<base\s+href="([^"]+)">/)?.[1];
 
-  assert.equal(rootRewrite?.destination, '/src/board-ui/index.html');
+  assert.equal(rootRewrite?.destination, '/index.html');
+  assert.match(novelIndexHtml, /src="\/src\/novel\/tyrano-match-tag\.mjs"/);
   assert.equal(baseHref, '/src/board-ui/');
 
   const documentBase = new URL(baseHref, 'https://example.test/');
-  const mainScript = indexHtml.match(/<script\s+type="module"\s+src="([^"]+)"/)?.[1];
+  const mainScript = boardIndexHtml.match(
+    /<script\s+type="module"\s+src="([^"]+)"/
+  )?.[1];
   assert.equal(new URL(mainScript, documentBase).pathname, '/src/board-ui/main.js');
   assert.ok(new URL(mainScript, documentBase).search);
   assert.equal(

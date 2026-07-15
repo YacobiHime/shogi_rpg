@@ -17,9 +17,8 @@
 ;最初は右下のメニューボタンを非表示にする
 [hidemenubutton]
 
-;タイトル画面へ移動
-@jump storage="title.ks"
+;M4の最小シナリオへ移動
+@jump storage="m4.ks"
 
 [s]
-
 
