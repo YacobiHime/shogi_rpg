@@ -96,6 +96,11 @@ function build() {
   copyTree(join('src', 'save'), (file) => extname(file) === '.mjs');
   copyTree(join('assets', 'nnue'), (file) => extname(file) === '.bin');
   copyBoardUi();
+  copyFile(join(ROOT, 'LICENSE'), join(DIST, 'LICENSE'));
+  copyFile(
+    join(ROOT, 'docs', 'ASSETS_CREDITS.md'),
+    join(DIST, 'ASSETS_CREDITS.md'),
+  );
   copyFile(join(ROOT, 'src', 'novel', 'index.html'), join(DIST, 'index.html'));
   validateNnueAssets();
 

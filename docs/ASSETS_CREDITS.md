@@ -6,200 +6,189 @@ nav_order: 9
 
 # ASSETS / CREDITS
 
-本プロジェクトで使用する外部素材・ソフトウェア（画像・音声・エンジン・評価関数等）と、
-そのライセンス・出典を記録する台帳です。**素材を追加するたびに必ず追記してください。**
-出典・ライセンス情報は後から追跡するのが困難なため、追加時点での記録を徹底します。
+本プロジェクトに含まれる外部ソフトウェア・素材と、その出典・利用条件を記録する台帳です。
+これは法的助言ではありません。公開前には、実際の配布ファイルと本台帳を再照合します。
+
+## 監査状況（2026-07-15）
+
+現在のFirebase Hostingビルドが配布する主な外部要素は、YaneuraOuのWASMビルド、
+`shogi.js`のバンドル、およびティラノスクリプトのランタイムです。外部NNUEファイルは
+現在配布していません。
+
+`tools/build-hosting.mjs`は、ルートの`LICENSE`と本台帳を配布物へ同梱します。
+
+公開前に解決が必要な事項:
+
+1. GPLのWASMバイナリについて、配布した版に対応する完全なソースコードを同じ配布場所から
+   取得できるようにする。
+2. `tyrano/`へ取り込んだランタイムの正確な配布版と、同梱ライブラリの版・ライセンス全文を
+   固定した第三者通知を用意する。
+3. リポジトリに残るティラノ公式サンプル素材を、自作または再配布可能と確認した素材へ
+   差し替える。現在のHostingビルドは`assets/nnue/*.bin`以外の`assets/`をコピーしないが、
+   公開リポジトリ自体からの二次配布可否は別途解決が必要。
 
 ## 記入ルール
 
-- 1素材につき1エントリを追加する
-- 「ライセンス」欄は必ずライセンス名（CC BY-SA 4.0 等）とバージョンを明記する
-- クレジット表記が必要なライセンスの場合、「表記要否」を "要" にし、実際にゲーム内クレジット画面に
-  掲載する文言を「表記文言」に記載する
-- 再配布不可・支援者限定配布のものは同梱しない（別途「使用不可素材リスト」に記録し、理由を残す）
+- 追加前に、入手元、制作者、正確なライセンス名・版、再配布可否を確認する。
+- 「ページに禁止と書かれていない」だけでは再配布許可済みと扱わない。
+- GPL等で対応ソースの提供が必要なバイナリは、使用した版・ビルド手順・ソース提供場所を記録する。
+- 独自利用規約の素材は、プロジェクト本体のGPLへ再ライセンスせず、個別条件を明記する。
+- 再配布不可、支援者限定、または条件不明の素材は配布物へ含めない。
 
-## テンプレート
+## プロジェクト本体
 
-```markdown
-### [素材名]
+### shogi_rpg
 
-- 種別: 画像 / 音声 / エンジン / 評価関数 / フォント / その他
-- 入手元URL:
-- 制作者・団体:
-- ライセンス:
-- 表記要否: 要 / 不要
-- 表記文言（要の場合）:
-- 使用箇所:
-- 追加日:
-```
+- 種別: ゲーム本体
+- 制作者: YacobiHimeおよび本プロジェクトの貢献者
+- ライセンス: GPL-3.0-or-later
+- ライセンス全文: `/LICENSE`
+- 自作範囲: ゲーム固有のJavaScript、シナリオ、データ、SVG盤・駒
+- 注意: 下記の外部要素には各項目の個別条件が適用される
 
----
+## 将棋エンジン・ルールライブラリ
 
-## ソフトウェア・エンジン
+### yaneuraou.wasm 0.1.2（通常版）
 
-### YaneuraOu（やねうら王）
-
-- 種別: 将棋AIエンジン
-- 入手元URL: https://github.com/yaneurao/YaneuraOu
-- 制作者: やねうらお 氏 他
-- ライセンス: GPLv3系（Stockfish / Apery / SilentMajority 由来コードを含むため、それらのライセンスに従う）
-- 表記要否: 要（GPLv3に基づくライセンス表記・ソースコード開示義務あり）
-- 使用箇所: 敵AIの対局思考エンジン（YaneuraOu.wasmとして組み込み）
-- 追加日: （記入）
-
-### YaneuraOu.wasm（WASMビルド）
-
-- 種別: 将棋AIエンジン（WASM移植版）
-- 入手元URL: https://github.com/mizar/YaneuraOu.wasm
-- 制作者: mizar 氏
-- ライセンス: 元プロジェクト（YaneuraOu）のライセンスに準拠（GPLv3系）
+- 種別: 将棋AIエンジンのWASMビルド
+- 入手元: https://www.npmjs.com/package/yaneuraou.wasm
+- ソース: https://github.com/arashigaoka/YaneuraOu.wasm
+- 制作者: Yuta Okumura（arashigaoka）、YaneuraOuの開発者・貢献者
+- ライセンス: GPL-3.0（npmパッケージの`package.json`と`Copying.txt`で確認）
+- 使用箇所: `src/board-ui/vendor/yaneuraou.*`
+- 用途: 内蔵評価を使う通常敵、およびHalfKP初期化失敗時のフォールバック
 - 表記要否: 要
-- 使用箇所: ブラウザ内での将棋AI実行（Web Worker）
-- 追加日: （記入）
-
-### YaneuraOu.wasm（mizar版、検証失敗・採用見送り）
-
-- 種別: 将棋AIエンジン（WASMビルド）
-- 入手元URL: https://github.com/mizar/YaneuraOu.wasm/releases/tag/v7.6.3-alpha.0
-- Releaseファイル: Suisho5-YaneuraOu.wasm-v7.6.3-alpha.0-wasm.zip, SuishoPetite-YaneuraOu.wasm-v7.6.3-alpha.0-wasm.zip
-- 制作者: mizar 氏
-- ライセンス: **GPLv3**（元プロジェクトであるYaneuraOuのライセンスに準拠）
-- 評価関数: 水匠5 (Suisho5) HalfKP NNUE、SuishoPetite k-p NNUE
-- **検証結果**: 採用見送り
-  - mizar版のWASMビルドはPThread（マルチスレッド）を使用しており、SharedArrayBufferが必須
-  - COOP/COEPヘッダーを設定してもSharedArrayBufferが有効にならず、WASM初期化に失敗
-  - Chromeの機能フラグ（Experimental WebAssembly features）でも解決せず
-  - 技術検証の目的を達成するため、arashigaoka版（シングルスレッド版）に戻した
-- **重要**: mizar版の使用はM0技術検証の試行に過ぎず、本番採用を意味するものではありません
-- 表記要否: 要（検証失敗の記録として残す）
-- 使用箇所: 検証のみで本番配布には組み込まない
-- 検証日: 2026-07-11
-- 結果: 失敗（SharedArrayBuffer/PThread問題により採用見送り）
-
-### YaneuraOu.wasm（arashigaoka版、通常版・内蔵評価フォールバック用）
-
-- 種別: 将棋AIエンジン（WASMビルド）
-- 入手元URL: https://www.npmjs.com/package/yaneuraou.wasm（npmパッケージ、v0.1.2）
-- 制作者: arashigaoka 氏（Yuta Okumura、yaneurao/YaneuraOuのフォーク）
-- ライセンス: **GPL-3.0**（確認済み。npmパッケージのpackage.jsonおよびREADME.mdより確認）
-- 評価関数: k-p-256-32-32（軽量版、yaneurao/YaneuraOu 2019/01/15リリース）
-- HalfKP評価関数を使用しない通常敵と、NNUE取得・HalfKP初期化失敗時のフォールバックに使用する
-- **mizar版検証失敗による採用**: mizar版がSharedArrayBuffer/PThread問題で動作しなかったため、技術検証目的でarashigaoka版（シングルスレッド版）を使用
-- 本番評価関数は引き続き「水匠5」「Hao（Háo）」「リゼロ評価関数」から検討する
-- 表記要否: 要
-- 使用箇所: `/tools/m0-verification/`での技術検証、および`src/board-ui/vendor/`の通常版エンジン
+- 対応ソース: 公開前に、配布バイナリと一致するソース一式の提供方法を確定する
 - 追加日: 2026-07-11
 
-### @mizarjp/yaneuraou.halfkp.noeval（本番HalfKP版）
+### @mizarjp/yaneuraou.halfkp.noeval 7.6.3-alpha.0
 
-- 種別: 将棋AIエンジン（WASMビルド）
-- 入手元URL: https://www.npmjs.com/package/@mizarjp/yaneuraou.halfkp.noeval
-- 制作者: mizar 氏
-- バージョン: 7.6.3-alpha.0
-- ライセンス: **GPL-3.0**（npmパッケージのメタデータで確認）
+- 種別: 外部評価関数を読むHalfKP版のWASMビルド
+- 入手元: https://www.npmjs.com/package/@mizarjp/yaneuraou.halfkp.noeval
+- ソース: https://github.com/mizar/YaneuraOu.wasm
+- 制作者: mizar、YaneuraOuの開発者・貢献者
+- ライセンス: GPL-3.0（npmパッケージメタデータで確認）
+- 使用箇所: `src/board-ui/vendor/yaneuraou.halfkp.noeval.*`
 - 表記要否: 要
-- 使用箇所: `src/board-ui/vendor/`。水匠5・HaoのHalfKP評価関数を使う敵の思考エンジン
+- 対応ソース: 公開前に、配布バイナリと一致するソース一式の提供方法を確定する
 - 追加日: 2026-07-14
 
-### shogi.js
+### YaneuraOu（上流）
 
-- 種別: 将棋ルールエンジン（JavaScriptライブラリ）
-- 入手元URL: https://github.com/na2hiro/Kifu-for-JS/tree/master/packages/shogi.js（npmパッケージ名: `shogi.js`）
-- 制作者: na2hiro 氏
-- ライセンス: **MIT**
-- 表記要否: 不要（MITのためクレジット表記は必須ではないが、慣行として掲載を推奨）
-- 使用箇所: 対局UIの合法手判定・成り／持ち駒・SFEN変換（`src/board-ui/board.js`）。
-  npm配布物にビルド済みESMバンドルが含まれないため、esbuildで単一ESMファイルに
-  バンドルした上で`src/board-ui/vendor/shogi.esm.js`として本番配布（再生成手順は
-  `src/board-ui/README.md`参照）
+- 種別: 将棋AIエンジン
+- 入手元・ソース: https://github.com/yaneurao/YaneuraOu
+- 制作者: やねうらお、および各上流プロジェクトの開発者・貢献者
+- ライセンス: GPL-3.0
+- 使用箇所: 上記WASMビルドの上流
+- 表記要否: 要
+
+### shogi.js 5.5.0
+
+- 種別: 将棋ルールライブラリ
+- 入手元: https://www.npmjs.com/package/shogi.js
+- ソース: https://github.com/na2hiro/Kifu-for-JS/tree/master/packages/shogi.js
+- 制作者: na2hiro
+- ライセンス: MIT
+- 使用箇所: 合法手判定、成り、持ち駒、SFEN変換。
+  `src/board-ui/vendor/shogi.esm.js`へバンドルして配布
+- ライセンス表示: バンドル末尾の`Bundled license information`に保持
 - 追加日: 2026-07-14
 
-## 評価関数（NNUEファイル）
+## ノベルエンジン
 
-### リゼロ評価関数
+### ティラノスクリプト
 
-- 種別: 評価関数ファイル
-- 入手元URL: （やねうら王プロジェクト内で配布。要URL確認）
-- 制作者: やねうら王プロジェクト
-- ライセンス: 権利主張なし、自由使用可
-- 表記要否: 不要（ただし出典明記を推奨）
-- 使用箇所: 敵AIの評価関数（強さの階層のベース）
-- 追加日: （記入）
+- 種別: HTML5ノベルゲームエンジン
+- 公式サイト: https://tyrano.jp/
+- ソース: https://github.com/ShikemokuMK/tyranoscript
+- 制作者: ShikemokuMK / STRIKEWORKS
+- 取り込み版の識別情報: `system/Config.tjs`は6.00、KAGランタイムは5.20を示す。
+  正確な配布版・コミットは未固定
+- 利用条件: 公式サイトでは無料、商用利用可、ゲーム開発目的の改造可、連絡・クレジット不要と案内
+- 使用箇所: `tyrano/`、`system/`、`scenario/`
+- 表記要否: 公式FAQ上は不要。本台帳では出典を表示する
+- 注意: 標準的なSPDXライセンスとしてではなく、公式の独自利用条件として記録する
 
-### Hao（Háo）評価関数
+### ティラノランタイム同梱ライブラリ
 
-- 種別: 評価関数ファイル（標準NNUE、halfkp_256x2-32-32型）
-- 入手元URL: https://github.com/nodchip/tanuki-/releases
-- 制作者: nodchip 氏（tanuki-シリーズ開発者）
-- ライセンス確認状況: **確認済み（2026年時点）**
-  - `nodchip/tanuki-` リポジトリの正式なGitHub Releaseとして公開。無料・無条件でダウンロード可能
-  - リポジトリ本体はやねうら王同様GPLv3系と思われるが、LICENSEファイルの内容は実装前に念のため再確認すること
-- 表記要否: 要（提供者クレジット表記を推奨）
-- 使用箇所: 敵AIの評価関数（無償公開の中では最強クラスとされる階層）
-- 使用エンジン: `shogiAI/hao/`（やねうら王ベース探索部と組み合わせて使用）
-- 確認日: 2026-07-09
+`tyrano/libs/`等には複数の第三者ライブラリが含まれます。ソースヘッダーから確認できた
+代表例は次のとおりです。
 
-### 振電3（Shinden3）評価関数
+| ライブラリ | ローカル識別情報 | ライセンス |
+|---|---|---|
+| jQuery | 3.6.0 | MIT |
+| jQuery Migrate | 1.4.1 | MIT |
+| jQuery UI | ファイル名に版なし | MIT |
+| anime.js | 3.2.1 | MIT |
+| howler.js | 2.2.3 | MIT |
+| animate.css | ヘッダーでDaniel Edenを表示 | MIT |
+| jquery.a3d | Copyright 2012 ShikemokuMK | MIT |
+| jQuery touchSwipe | 1.6.18 | MITまたはGPL-2.0のデュアル（本配布ではMITを選択） |
+| Remodal | ファイルヘッダーで確認 | MIT |
+| jquery.lettering | Copyright 2010 Dave Rupert | WTFPL |
 
-- 種別: 評価関数ファイル（振り飛車特化型）
-- 制作者: たややん 氏（水匠開発者）提供
-- ライセンス確認状況: **要確認**
-- 使用箇所: 敵AIの評価関数（振り飛車特化・強豪クラスの階層）
-- 使用エンジン: `shogiAI/Shinden3/`（WASM対応コードも同梱、マイルストーン0のWASMビルド検証に活用）
+Three.js、html2canvas、jsQR、jsrender、lz-string、textillate関連、AR関連等も含まれるため、
+全ファイルの版とライセンス全文を固定するまでは監査未完了です。
 
-### 水匠5 評価関数（Suisho5）
+## 評価関数（NNUE）
 
-- 種別: 評価関数ファイル（NNUE_halfKP256型）
-- 入手元URL: https://github.com/yaneurao/YaneuraOu/releases/tag/suisho5
-- 制作者: たややん 氏（水匠開発者）、やねうら王プロジェクト経由で提供
-- ライセンス確認状況: **確認済み（2026年時点）**
-  - `yaneurao/YaneuraOu` リポジトリの正式なReleaseとして公開。ログイン・課金不要でダウンロード可能
-  - ページ上に再配布禁止・個人利用限定等の制限記載なし
-  - リポジトリ全体の方針（Stockfish由来コード含む、GPLv3系）に準ずるものとして扱う
-  - 同ページに「やねうら王に支援してもっと強い評価関数を入手する」という支援者向け導線があり、
-    **これが無料版（水匠5まで）と支援者限定版（水匠10beta等）の境界線**であることを確認済み
-- 表記要否: 要（提供者クレジット表記を推奨。「水匠5 評価関数 by たややん」等）
-- 使用箇所: 敵AIの評価関数（強豪クラスの階層）
-- 使用エンジン: `shogiAI/Suisho5/`（やねうら王ベース探索部と組み合わせて使用）
-- **本プロジェクトで使用する水匠は5のみとする**。水匠6以降は支援者限定配布のため対象外
-- 確認日: 2026-07-09
+### 現在の配布状態
 
-## 将棋盤・駒画像
+- `data/enemies.json`の現行敵は`nnue_file: null`
+- `assets/nnue/`には`.gitkeep`だけがあり、外部NNUEバイナリはない
+- Hostingビルドにも外部NNUEは含まれない
 
-- （未選定：Wikimedia Commons上のCC BY-SA駒画像等を候補として調査中。選定後に本セクションへ追記）
+### 将来候補（配布未承認）
 
-## RPG演出用素材（キャラクター・背景・BGM・SE等）
+| 名称 | 候補入手元 | 現在の判断 |
+|---|---|---|
+| リゼロ評価関数 | YaneuraOu関連配布物（正確なURL未固定） | 権利・再配布許可の一次資料が未固定。配布不可 |
+| 水匠5 | https://github.com/yaneurao/YaneuraOu/releases/tag/suisho5 | ダウンロード可能であることと第三者再配布許可は別。明示条件または許諾確認まで配布不可 |
+| Hao（Háo） | https://github.com/nodchip/tanuki-/releases | リポジトリ本体のライセンスだけでは評価関数バイナリの権利を断定しない。確認まで配布不可 |
+| 振電3 | たややん提供 | 再配布許諾未確認。配布不可 |
 
-- （未選定）
+水匠6以降など支援者限定で入手した評価関数は、明示的な再配布許諾がない限り候補にも含めません。
 
-## フォント
+## 盤・駒
 
-- （未選定）
+### 自作SVG将棋盤・駒
 
----
+- 種別: ブラウザ内SVG描画
+- 入手元: 外部素材なし
+- 制作者: 本プロジェクト
+- ライセンス: GPL-3.0-or-later
+- 表記要否: 不要
+- 使用箇所: `src/board-ui/board.js`、`src/board-ui/board-theme.mjs`
+- 追加日: 2026-07-15
+- 備考: 外部画像・外部フォントを使用しない
 
-## 使用不可・使用見送り素材リスト
+## リポジトリ内のティラノサンプル素材
 
-将来的に「使えると思ったが使用不可だった」ものを記録し、同じ調査を繰り返さないようにする。
+`assets/`には、初期ティラノプロジェクト由来と見られる立ち絵、背景、BGM、音声、
+メニュー画像があります。少なくとも「あかね／やまと」立ち絵の公式配布ページは、
+個人・非商用ゲームに限定し、二次配布・転載・素材自体のアップロードを禁止しています。
+
+- 公式立ち絵ページ: https://plugin.tyrano.jp/item/4000
+- 著作権表示: 2016 © STRIKEWORKS/ShikemokuMK All Rights Reserved
+- 現在の扱い: Hostingビルド対象外。公開リポジトリとして配布する前に差し替えまたは除外が必要
+- その他の背景・BGM・音声・UI画像: 個別の出典と条件が未固定のため、同様に配布承認しない
+
+## 使用不可・保留リスト
 
 | 名称 | 理由 | 確認日 |
 |---|---|---|
-| 水匠6以降（水匠10beta等含む） | やねうら王支援者限定配布（GitHub Sponsors/FANBOX経由）のため、無償同梱不可 | 2026-07-09 |
+| あかね／やまと公式立ち絵 | 非商用限定かつ素材の二次配布・転載・アップロード禁止。GPL素材として再配布不可 | 2026-07-15 |
+| 出典未固定のティラノサンプル画像・音声 | 個別の再配布条件を追跡できない | 2026-07-15 |
+| 水匠6以降等の支援者限定評価関数 | 入手資格と第三者再配布権は別であり、再配布許諾未確認 | 2026-07-15 |
+| リゼロ・水匠5・Hao・振電3の評価関数 | バイナリ自体の第三者再配布条件を一次資料で固定できていない | 2026-07-15 |
 
-**本プロジェクトで配布する評価関数は「水匠5」「Hao（Háo）」「リゼロ評価関数」の3種**とする。
+## クレジット表示案（現在の配布物）
 
----
-
-## クレジット画面掲載文言（ドラフト）
-
-ゲーム内クレジット画面に掲載する想定の文言をまとめておく場所です。実装時にそのまま利用できるよう整理します。
-
-```
-将棋AIエンジン: やねうら王 (YaneuraOu) / GPLv3
-YaneuraOu.wasm by mizar
-評価関数: リゼロ評価関数 (やねうら王プロジェクト)
-評価関数: 水匠5 by たややん (やねうら王プロジェクト経由で提供)
-評価関数: Hao (Háo) by nodchip (tanuki-プロジェクト)
-評価関数: 振電3 by たややん
-（画像・音楽等の素材クレジットは追加され次第ここに追記）
+```text
+将棋AIエンジン: YaneuraOu
+WASMビルド: yaneuraou.wasm by Yuta Okumura / GPL-3.0
+HalfKP WASMビルド: YaneuraOu.wasm by mizar / GPL-3.0
+将棋ルール: shogi.js by na2hiro / MIT
+ノベルエンジン: ティラノスクリプト by ShikemokuMK / STRIKEWORKS
+本作のライセンスと第三者通知: /LICENSE, /ASSETS_CREDITS.md
 ```
