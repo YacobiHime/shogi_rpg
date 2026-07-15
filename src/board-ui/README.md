@@ -13,6 +13,7 @@ src/board-ui/entering-king.mjs … 27点法の入玉宣言条件を判定
 src/board-ui/formations.mjs … 戦形マスタの取得・検証・選択
 src/board-ui/enemies.mjs … 敵マスタの取得・検証・選択
 src/board-ui/difficulty.mjs … 難易度マスタの取得・検証・ノード数補正
+src/board-ui/items.mjs … アイテム／スキルマスタの取得・検証・探索量デバフ補正
 src/board-ui/move-selection.mjs … 手のランク補正とMultiPV候補からの指し手選択
 src/board-ui/nnue.mjs     … 敵の評価関数ファイル名から配布URLを解決
 src/board-ui/engine-loader.mjs … NNUEの有無に応じてWASMローダーを動的選択
@@ -174,9 +175,21 @@ http://localhost:<port>/src/board-ui/index.html?formation=standard&enemy=trainin
 ランダムに指し手を選ぶ。現在の稽古相手では、`easy`は第1〜第3候補、`normal`と`hard`は
 第1候補のみが選択対象になる。候補不足時は利用可能なランクまで自動的に縮退する。
 
+探索量デバフスキルも指定する場合:
+```
+http://localhost:<port>/src/board-ui/index.html?formation=standard&enemy=training_partner&difficulty=normal&item=node_limit_half
+```
+
+スキルは`data/items.json`へ定義する。現在は`type: "enemy_debuff_nodes"`かつ
+`consumable: false`でレベル1から解禁されるスキルを準備画面で1つ装備できる。
+`effect_value`は敵探索量へ掛ける倍率で、
+`node_limit_half`（読み筋封じ）の`0.5`は実効ノード数を50%にする。`item`を省略すると未装備になる。
+
 ## 既知の未実装・要対応事項（このコードをベースに実装を進める際の引き継ぎ事項）
 
 - 駒・盤の本番用画像素材（現状はSVGの簡易図形と文字表示）
+- ヒント、待った、次善手デバフなど、探索量削減以外のアイテム／スキル
+- プレイヤーレベルと解禁テーブルに基づく準備画面の選択肢制御
 
 `applyUsiMove()`のパーサー実装、盤面API呼び出し箇所（`shogi.get()`等）、空きマスへの
 クリック判定（`_drawCellHitboxes()`）、王手放置となる着手と打ち歩詰めの拒否、
@@ -188,7 +201,7 @@ http://localhost:<port>/src/board-ui/index.html?formation=standard&enemy=trainin
 npm test
 ```
 
-敵・戦形・難易度マスタのスキーマと参照整合性、難易度を反映した実効ノード数と手のランク範囲、
+敵・戦形・難易度・アイテムマスタのスキーマと参照整合性、難易度と探索量デバフを反映した実効ノード数と手のランク範囲、
 MultiPV候補の収集・ランダム選択・候補不足時のフォールバック、NNUEのパス解決・初期化前注入・
 エンジン動的選択・各初期化段階からの内蔵評価へのフォールバック、ノード数基準のUSIコマンドと
 最大思考時間による停止処理を確認する。合法手フィルターが王手放置の盤上移動・持ち駒打ちと打ち歩詰めを拒否し、通常の

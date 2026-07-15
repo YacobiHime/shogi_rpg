@@ -1,0 +1,11 @@
+[
+  {
+    "item_id": "node_limit_half",
+    "name": "読み筋封じ",
+    "type": "enemy_debuff_nodes",
+    "unlock_level": 1,
+    "effect_value": 0.5,
+    "stackable": false,
+    "consumable": false
+  }
+]

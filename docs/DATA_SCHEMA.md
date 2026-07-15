@@ -63,11 +63,18 @@ nav_order: 5
   "type": "hint",                    // "hint" | "undo" | "handicap" | "formation_start" |
                                       // "extra_hand_pieces" | "enemy_debuff_nodes" | "enemy_debuff_rank"
   "unlock_level": 4,                 // number
-  "effect_value": 1,                 // number, 効果量（ヒント+1回、探索ノード数-50%など、typeにより意味が変わる）
+  "effect_value": 1,                 // number, 効果量（typeにより意味が変わる）
   "stackable": true,                 // boolean, 所持数を積み増せるか
   "consumable": true                 // boolean, 対局ごとに消費するか、恒久スキルか
 }
 ```
+
+- `enemy_debuff_nodes`の`effect_value`は、敵の探索ノード数へ掛ける倍率とする。
+  0より大きく1以下を指定し、`0.5`なら探索量を50%にする
+- 実効ノード数は`敵のnode_limit × 難易度のnode_limit_mult × effect_value`を
+  四捨五入し、最低1に補正する。未装備時の倍率は1とする
+- 現在の対局準備画面では、プレイヤーレベル1で解禁済みかつ`consumable: false`の
+  `enemy_debuff_nodes`を1つだけ装備できる
 
 ## 4. レベルアップ／解禁テーブル（`data/level_unlocks.json`）
 
@@ -119,6 +126,9 @@ nav_order: 5
   "enemy_debuffs_applied": ["node_limit_half"]
 }
 ```
+
+スタンドアロンの対局UIでは、現在装備する探索量デバフをURLクエリ
+`?item=<item_id>`でも受け取る。省略時は未装備とする。
 
 ## 7. セーブデータ（localStorage、`shogi_rpg_save`キー）
 

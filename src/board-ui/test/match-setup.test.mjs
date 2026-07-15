@@ -9,6 +9,8 @@ import {
 } from '../match-setup.mjs';
 
 const dataUrl = new URL('../../../data/', import.meta.url);
+const indexUrl = new URL('../index.html', import.meta.url);
+const mainUrl = new URL('../main.js', import.meta.url);
 
 function createMasterFetch(url) {
   const fileName = String(url).split('/').at(-1);
@@ -18,7 +20,7 @@ function createMasterFetch(url) {
   }));
 }
 
-test('準備画面用の敵・戦形・難易度一覧を読み込める', async () => {
+test('準備画面用の敵・戦形・難易度・アイテム一覧を読み込める', async () => {
   const options = await loadMatchSetupOptions({ fetchImpl: createMasterFetch });
 
   assert.equal(options.enemies[0].name, '稽古相手');
@@ -26,6 +28,7 @@ test('準備画面用の敵・戦形・難易度一覧を読み込める', async
   assert.deepEqual(options.difficulties.map((item) => item.name), [
     'やさしい', 'ふつう', 'むずかしい',
   ]);
+  assert.equal(options.items[0].name, '読み筋封じ');
 });
 
 test('敵が使用できる戦形だけを選択肢にする', () => {
@@ -47,4 +50,22 @@ test('選択内容を既存形式の対局URLクエリへ変換する', () => {
     formationId: 'standard',
     difficultyId: 'normal',
   }), '?enemy=training_partner&formation=standard&difficulty=normal');
+
+  assert.equal(buildMatchSearch({
+    enemyId: 'training_partner',
+    formationId: 'standard',
+    difficultyId: 'normal',
+    itemId: 'node_limit_half',
+  }), '?enemy=training_partner&formation=standard&difficulty=normal&item=node_limit_half');
+});
+
+test('準備画面のスキル選択を対局の探索ノード倍率へ接続する', async () => {
+  const [html, source] = await Promise.all([
+    readFile(indexUrl, 'utf8'),
+    readFile(mainUrl, 'utf8'),
+  ]);
+
+  assert.match(html, /id="setup-item"/);
+  assert.match(source, /itemId: setupItem\.value/);
+  assert.match(source, /difficulty\.node_limit_mult \* nodeDebuffMultiplier/);
 });

@@ -84,6 +84,8 @@ engine.postMessage("go nodes " + enemyConfig.nodeLimit);
 プレイヤー側のスキル（敵の探索ノード数を減らす等）は、対局開始時にこの設定値へ補正をかける形で実装する。
 通常は`node_limit`まで探索させ、`max_think_time_ms`へ到達した場合だけ`stop`を送る。これにより、
 端末が高速なほど敵が強くなる問題を抑えつつ、低速端末で思考が終わらない事態を防ぐ。
+探索量デバフの実効ノード数は、`敵のnode_limit × 難易度倍率 × スキル倍率`を四捨五入し、
+最低1に補正する。装備スキルは`items.json`の`enemy_debuff_nodes`から選択する。
 
 `nnue_file`が指定された場合、対局UIはファイル名を`assets/nnue/`配下のURLへ解決し、
 HalfKP noeval版WASMを動的に読み込み、エンジン初期化前の`preRun`で仮想FSの`/nn.bin`へ配置する。

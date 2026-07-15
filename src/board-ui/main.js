@@ -15,6 +15,12 @@ import { loadEngineFactories } from './engine-loader.mjs';
 import { loadEnemy } from './enemies.mjs';
 import { loadFormation } from './formations.mjs';
 import {
+  getNodeDebuffMultiplier,
+  getNodeDebuffSkills,
+  loadItems,
+  selectItem,
+} from './items.mjs';
+import {
   buildMatchSearch,
   getAvailableFormations,
   loadMatchSetupOptions,
@@ -41,6 +47,7 @@ const setupForm = document.getElementById('setup-form');
 const setupEnemy = document.getElementById('setup-enemy');
 const setupFormation = document.getElementById('setup-formation');
 const setupDifficulty = document.getElementById('setup-difficulty');
+const setupItem = document.getElementById('setup-item');
 const gameScreen = document.getElementById('game-screen');
 let wakeLock = null;
 
@@ -64,6 +71,10 @@ async function showMatchSetup(params) {
 
   showOptions(setupEnemy, options.enemies, 'enemy_id', 'name');
   showOptions(setupDifficulty, options.difficulties, 'difficulty_id', 'name');
+  showOptions(setupItem, [
+    { item_id: '', name: '装備しない' },
+    ...getNodeDebuffSkills(options.items),
+  ], 'item_id', 'name');
 
   const requestedEnemy = params.get('enemy');
   if (options.enemies.some((enemy) => enemy.enemy_id === requestedEnemy)) {
@@ -72,6 +83,10 @@ async function showMatchSetup(params) {
   const requestedDifficulty = params.get('difficulty') || 'normal';
   if (options.difficulties.some((difficulty) => difficulty.difficulty_id === requestedDifficulty)) {
     setupDifficulty.value = requestedDifficulty;
+  }
+  const requestedItem = params.get('item') || '';
+  if ([...setupItem.options].some((option) => option.value === requestedItem)) {
+    setupItem.value = requestedItem;
   }
 
   function updateFormationOptions() {
@@ -93,6 +108,7 @@ async function showMatchSetup(params) {
       enemyId: setupEnemy.value,
       formationId: setupFormation.value,
       difficultyId: setupDifficulty.value,
+      itemId: setupItem.value,
     }));
   });
 
@@ -168,16 +184,23 @@ async function main() {
   const formationId = params.get('formation') || 'standard';
   const enemyId = params.get('enemy') || 'training_partner';
   const difficultyId = params.get('difficulty') || 'normal';
+  const itemId = params.get('item');
   setStatus('対局データを読み込み中...');
   setLoading('対局データを読み込み中...');
-  const [formation, enemy, difficulty] = await Promise.all([
+  const [formation, enemy, difficulty, items] = await Promise.all([
     loadFormation(formationId),
     loadEnemy(enemyId),
     loadDifficulty(difficultyId),
+    loadItems(),
   ]);
+  const equippedItem = selectItem(items, itemId);
+  if (equippedItem && equippedItem.type !== 'enemy_debuff_nodes') {
+    throw new Error(`この対局では探索量デバフスキルだけを装備できます: ${itemId}`);
+  }
+  const nodeDebuffMultiplier = getNodeDebuffMultiplier(equippedItem);
   const effectiveNodeLimit = calculateEffectiveNodeLimit(
     enemy.node_limit,
-    difficulty.node_limit_mult
+    difficulty.node_limit_mult * nodeDebuffMultiplier
   );
   const effectiveMoveRank = calculateEffectiveMoveRank(
     enemy.move_rank,
@@ -321,11 +344,13 @@ async function main() {
     }
 
     updateDeclareWinButton();
-    setStatus(`${enemy.name}／${formation.name}／${difficulty.name}：あなたの番です`);
+    const skillLabel = equippedItem ? `／${equippedItem.name}` : '';
+    setStatus(`${enemy.name}／${formation.name}／${difficulty.name}${skillLabel}：あなたの番です`);
   }
 
   updateDeclareWinButton();
-  setStatus(`${enemy.name}／${formation.name}／${difficulty.name}：あなたの番です（先手）`);
+  const skillLabel = equippedItem ? `／${equippedItem.name}` : '';
+  setStatus(`${enemy.name}／${formation.name}／${difficulty.name}${skillLabel}：あなたの番です（先手）`);
 }
 
 main().catch((e) => {
