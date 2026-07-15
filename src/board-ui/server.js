@@ -13,7 +13,7 @@ const mime = {
 
 http.createServer((request, response) => {
   const pathname = decodeURIComponent(new URL(request.url, 'http://localhost').pathname);
-  const relative = pathname === '/' ? 'src/campaign/index.html' : pathname.replace(/^\/+/, '');
+  const relative = pathname === '/' ? 'src/rpg/index.html' : pathname.replace(/^\/+/, '');
   const file = path.resolve(root, relative);
   if (!file.startsWith(root + path.sep)) {
     response.writeHead(403).end('Forbidden'); return;

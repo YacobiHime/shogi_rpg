@@ -55,7 +55,7 @@ src/board-ui/vendor/*
 # vendor/とは別にindex.htmlと同じ階層にも配置が必要（README参照）
 !src/board-ui/yaneuraou.data
 
-# 開発用HTTPサーバー（COOP/COEP対応、各自の環境で用意する。tools/m0-verificationと同じ方針）
+# 開発用HTTPサーバーはsrc/board-ui/server.jsを追跡する
 
 # --- 大容量バイナリの誤コミット防止（評価関数ファイル全般） ---
 # 使用許可済みの評価関数（水匠5・Hao・リゼロ）は ShogiAI/*/eval/ 配下で明示的に管理
