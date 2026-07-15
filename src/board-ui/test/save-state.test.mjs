@@ -51,7 +51,7 @@ function memoryStorage(initial = null) {
 test('初回セーブはレベル解禁と消費アイテムの初期数を反映する', () => {
   const state = createDefaultSave(context, { playerLevel: 3, now });
 
-  assert.equal(state.version, 1);
+  assert.equal(state.version, 2);
   assert.equal(state.player_level, 3);
   assert.deepEqual(state.unlocked_formations, ['standard', 'mino']);
   assert.equal(state.item_counts.hint_ticket, 2);
@@ -63,7 +63,7 @@ test('対局勝利を再適用しても撃破済み敵を重複記録しない',
   const state = createDefaultSave(context, { now });
   const won = recordDefeatedBoss(state, 'boss1');
   const retried = recordDefeatedBoss(won, 'boss1');
-  assert.deepEqual(retried.defeated_bosses, ['boss1']);
+  assert.deepEqual(retried.defeated_enemies, ['boss1']);
   assert.equal(retried, won);
 });
 
@@ -75,7 +75,7 @@ test('旧版の欠損フィールドを補い現在版へ移行する', () => {
     difficulty: 'easy',
   }, context, { now });
 
-  assert.equal(state.version, 1);
+  assert.equal(state.version, 2);
   assert.deepEqual(state.unlocked_formations, ['standard']);
   assert.deepEqual(state.unlocked_items, ['hint_ticket', 'undo_ticket', 'node_limit_half']);
   assert.deepEqual(state.item_counts, { hint_ticket: 2, undo_ticket: 3 });
@@ -88,11 +88,11 @@ test('未知ID、不正範囲、未来バージョンを拒否する', () => {
     /未知のID/,
   );
   assert.throws(
-    () => normalizeSaveState({ ...base, item_counts: { hint_ticket: 16 } }, context),
-    /0〜15/,
+    () => normalizeSaveState({ ...base, item_counts: { hint_ticket: 1000 } }, context),
+    /0〜999/,
   );
   assert.throws(
-    () => normalizeSaveState({ ...base, version: 2 }, context),
+    () => normalizeSaveState({ ...base, version: 3 }, context),
     /未対応/,
   );
 });

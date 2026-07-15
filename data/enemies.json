@@ -1,5 +1,17 @@
 [
   {
+    "enemy_id": "training_partner",
+    "name": "稽古相手",
+    "chapter": 1,
+    "nnue_file": null,
+    "max_think_time_ms": 10000,
+    "node_limit": 10000,
+    "move_rank": { "min": 1, "max": 1 },
+    "allowed_openings": ["standard"],
+    "handicap": null,
+    "start_sfen_override": null
+  },
+  {
     "enemy_id": "ch1_sora",
     "name": "歩のソラ",
     "chapter": 1,
