@@ -2,18 +2,73 @@
   {
     "level": 1,
     "unlocks": {
-      "formations": [
-        "standard"
-      ],
-      "items": [
-        "node_limit_half",
-        "hint_ticket",
-        "undo_ticket"
-      ],
-      "skill_upgrades": {
-        "undo_max": 0,
-        "hint_max": 0
-      }
+      "formations": ["standard"],
+      "items": ["node_limit_half", "hint_ticket", "undo_ticket"],
+      "skill_upgrades": { "undo_max": 0, "hint_max": 0 }
+    }
+  },
+  {
+    "level": 2,
+    "unlocks": {
+      "formations": [],
+      "items": [],
+      "skill_upgrades": { "undo_max": 0, "hint_max": 1 }
+    }
+  },
+  {
+    "level": 3,
+    "unlocks": {
+      "formations": [],
+      "items": ["thinking_hourglass"],
+      "skill_upgrades": { "undo_max": 1, "hint_max": 0 }
+    }
+  },
+  {
+    "level": 5,
+    "unlocks": {
+      "formations": [],
+      "items": ["confusion_incense"],
+      "skill_upgrades": { "undo_max": 0, "hint_max": 1 }
+    }
+  },
+  {
+    "level": 7,
+    "unlocks": {
+      "formations": [],
+      "items": [],
+      "skill_upgrades": { "undo_max": 1, "hint_max": 0 }
+    }
+  },
+  {
+    "level": 9,
+    "unlocks": {
+      "formations": [],
+      "items": [],
+      "skill_upgrades": { "undo_max": 0, "hint_max": 1 }
+    }
+  },
+  {
+    "level": 12,
+    "unlocks": {
+      "formations": [],
+      "items": [],
+      "skill_upgrades": { "undo_max": 1, "hint_max": 0 }
+    }
+  },
+  {
+    "level": 15,
+    "unlocks": {
+      "formations": [],
+      "items": [],
+      "skill_upgrades": { "undo_max": 0, "hint_max": 1 }
+    }
+  },
+  {
+    "level": 18,
+    "unlocks": {
+      "formations": [],
+      "items": [],
+      "skill_upgrades": { "undo_max": 1, "hint_max": 1 }
     }
   }
 ]

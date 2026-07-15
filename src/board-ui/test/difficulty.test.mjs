@@ -20,20 +20,20 @@ test('difficulty.jsonの3段階を読み込める', async () => {
 
   assert.equal(difficulties.easy.node_limit_mult, 0.5);
   assert.equal(difficulties.normal.node_limit_mult, 1);
-  assert.equal(difficulties.normal.node_limit_stddev_ratio, 0.3);
+  assert.equal(difficulties.normal.node_limit_stddev_ratio, 0.45);
   assert.equal(difficulties.hard.node_limit_mult, 1.5);
 });
 
-test('探索ノード数を正規分布で揺らし、標準偏差2個分に制限する', () => {
+test('探索ノード数の下振れを保ちつつ、正規分布の上振れ幅を半分に圧縮する', () => {
   const sequenceRandom = (...values) => {
     let index = 0;
     return () => values[index++];
   };
 
   assert.equal(varyNodeLimit(10000, 0), 10000);
-  assert.equal(varyNodeLimit(10000, 0.3, sequenceRandom(Math.exp(-0.5), 0)), 13000);
-  assert.equal(varyNodeLimit(10000, 0.3, sequenceRandom(0, 0)), 16000);
-  assert.equal(varyNodeLimit(10000, 0.3, sequenceRandom(0, 0.5)), 4000);
+  assert.equal(varyNodeLimit(10000, 0.45, sequenceRandom(Math.exp(-0.5), 0)), 12250);
+  assert.equal(varyNodeLimit(10000, 0.45, sequenceRandom(0, 0)), 14500);
+  assert.equal(varyNodeLimit(10000, 0.45, sequenceRandom(0, 0.5)), 1000);
 });
 
 test('指定した難易度を表示名付きで取得できる', async () => {

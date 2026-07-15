@@ -6,7 +6,7 @@
   },
   "normal": {
     "node_limit_mult": 1.0,
-    "node_limit_stddev_ratio": 0.3,
+    "node_limit_stddev_ratio": 0.45,
     "move_rank_max_bonus": 0
   },
   "hard": {

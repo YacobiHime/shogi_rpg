@@ -78,7 +78,8 @@ export function calculateEffectiveNodeLimit(nodeLimit, multiplier) {
 }
 
 /**
- * 実効ノード数を正規分布で揺らす。極端値は平均から標準偏差2個分までに制限する。
+ * 実効ノード数を正規分布を基に揺らす。上振れ幅は半分に圧縮し、
+ * 極端値は圧縮前の平均から標準偏差2個分までに制限する。
  * @param {number} nodeLimit
  * @param {number} stddevRatio
  * @param {() => number} [random]
@@ -97,5 +98,6 @@ export function varyNodeLimit(nodeLimit, stddevRatio, random = Math.random) {
   const u2 = Math.max(0, Math.min(1, random()));
   const standardNormal = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
   const limitedNormal = Math.max(-2, Math.min(2, standardNormal));
-  return Math.max(1, Math.round(nodeLimit * (1 + stddevRatio * limitedNormal)));
+  const adjustedNormal = limitedNormal > 0 ? limitedNormal * 0.5 : limitedNormal;
+  return Math.max(1, Math.round(nodeLimit * (1 + stddevRatio * adjustedNormal)));
 }
