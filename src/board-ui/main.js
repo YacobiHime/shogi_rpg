@@ -9,7 +9,11 @@
 import { ShogiEngine } from '../engine/engine.js';
 // クエリを更新すると、展示端末に残った旧版の盤面描画コードを確実に置き換えられる。
 import { BoardView, Color } from './board.js?v=selection-highlights-1';
-import { calculateEffectiveNodeLimit, loadDifficulty } from './difficulty.mjs';
+import {
+  calculateEffectiveNodeLimit,
+  loadDifficulty,
+  varyNodeLimit,
+} from './difficulty.mjs';
 import { evaluateEnteringKingDeclaration } from './entering-king.mjs';
 import { loadEngineFactories } from './engine-loader.mjs';
 import { loadEnemy } from './enemies.mjs';
@@ -310,7 +314,7 @@ async function main() {
     engine.setPosition(formation.start_sfen + moves);
 
     const searchResult = await engine.go({
-      nodes: effectiveNodeLimit,
+      nodes: varyNodeLimit(effectiveNodeLimit, difficulty.node_limit_stddev_ratio),
       maxTimeMs: enemy.max_think_time_ms,
     });
     const { move } = selectMoveByRank(searchResult, effectiveMoveRank);

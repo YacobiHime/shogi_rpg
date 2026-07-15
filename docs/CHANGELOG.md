@@ -13,6 +13,8 @@ nav_order: 7
 ## [Unreleased]
 
 ### Added
+- 通常難易度の敵AIが指すたびに、探索ノード数を平均100%・標準偏差15%の正規分布で
+  70〜130%の範囲に変動させ、読みの深さへ適度なばらつきが出るようにした
 - `data/items.json`に最初の恒久スキル「読み筋封じ」を追加し、対局準備画面または
   URLクエリ`?item=node_limit_half`から装備して敵の実効探索ノード数を50%にできるようにした
 - `src/board-ui/items.mjs` / `test/items.test.mjs`: アイテムマスタの検証、探索量デバフの

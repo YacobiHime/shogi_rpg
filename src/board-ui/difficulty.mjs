@@ -23,6 +23,11 @@ export function validateDifficulties(data) {
     if (!Number.isFinite(modifier.node_limit_mult) || modifier.node_limit_mult <= 0) {
       throw new Error(`${difficultyId}.node_limit_multは0より大きい数値にしてください`);
     }
+    if (!Number.isFinite(modifier.node_limit_stddev_ratio)
+      || modifier.node_limit_stddev_ratio < 0
+      || modifier.node_limit_stddev_ratio > 0.5) {
+      throw new Error(`${difficultyId}.node_limit_stddev_ratioは0以上0.5以下の数値にしてください`);
+    }
     if (!Number.isInteger(modifier.move_rank_max_bonus)
       || modifier.move_rank_max_bonus < 0) {
       throw new Error(`${difficultyId}.move_rank_max_bonusは0以上の整数にしてください`);
@@ -70,4 +75,27 @@ export function calculateEffectiveNodeLimit(nodeLimit, multiplier) {
     throw new Error('multiplierは0より大きい数値にしてください');
   }
   return Math.max(1, Math.round(nodeLimit * multiplier));
+}
+
+/**
+ * 実効ノード数を正規分布で揺らす。極端値は平均から標準偏差2個分までに制限する。
+ * @param {number} nodeLimit
+ * @param {number} stddevRatio
+ * @param {() => number} [random]
+ */
+export function varyNodeLimit(nodeLimit, stddevRatio, random = Math.random) {
+  if (!Number.isInteger(nodeLimit) || nodeLimit < 1) {
+    throw new Error('nodeLimitは1以上の整数にしてください');
+  }
+  if (!Number.isFinite(stddevRatio) || stddevRatio < 0 || stddevRatio > 0.5) {
+    throw new Error('stddevRatioは0以上0.5以下の数値にしてください');
+  }
+  if (stddevRatio === 0) return nodeLimit;
+
+  // Box-Muller法。0はlog(0)を避け、乱数源が境界値を返しても有限値にする。
+  const u1 = Math.max(Number.MIN_VALUE, Math.min(1, random()));
+  const u2 = Math.max(0, Math.min(1, random()));
+  const standardNormal = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+  const limitedNormal = Math.max(-2, Math.min(2, standardNormal));
+  return Math.max(1, Math.round(nodeLimit * (1 + stddevRatio * limitedNormal)));
 }

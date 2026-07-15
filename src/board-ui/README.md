@@ -170,7 +170,9 @@ http://localhost:<port>/src/board-ui/index.html?formation=standard&enemy=trainin
 ```
 
 難易度は`data/difficulty.json`へ定義する。未指定時は`normal`（ふつう）を使用し、
-`node_limit_mult`を敵の`node_limit`へ乗算した実効ノード数で探索する。また、
+`node_limit_mult`を敵の`node_limit`へ乗算した実効ノード数で探索する。通常難易度では、
+敵が指すたびに実効ノード数を平均100%・標準偏差15%の正規分布（70%から130%に制限）で
+少し揺らす。また、
 `move_rank_max_bonus`を敵の`move_rank.max`へ加算し、MultiPVで得た実効範囲内の候補から
 ランダムに指し手を選ぶ。現在の稽古相手では、`easy`は第1〜第3候補、`normal`と`hard`は
 第1候補のみが選択対象になる。候補不足時は利用可能なランクまで自動的に縮退する。

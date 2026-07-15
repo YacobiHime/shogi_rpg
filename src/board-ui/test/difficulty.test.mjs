@@ -6,6 +6,7 @@ import {
   calculateEffectiveNodeLimit,
   loadDifficulty,
   validateDifficulties,
+  varyNodeLimit,
 } from '../difficulty.mjs';
 
 const difficultyUrl = new URL('../../../data/difficulty.json', import.meta.url);
@@ -19,7 +20,20 @@ test('difficulty.jsonの3段階を読み込める', async () => {
 
   assert.equal(difficulties.easy.node_limit_mult, 0.5);
   assert.equal(difficulties.normal.node_limit_mult, 1);
+  assert.equal(difficulties.normal.node_limit_stddev_ratio, 0.15);
   assert.equal(difficulties.hard.node_limit_mult, 1.5);
+});
+
+test('探索ノード数を正規分布で揺らし、標準偏差2個分に制限する', () => {
+  const sequenceRandom = (...values) => {
+    let index = 0;
+    return () => values[index++];
+  };
+
+  assert.equal(varyNodeLimit(10000, 0), 10000);
+  assert.equal(varyNodeLimit(10000, 0.15, sequenceRandom(Math.exp(-0.5), 0)), 11500);
+  assert.equal(varyNodeLimit(10000, 0.15, sequenceRandom(0, 0)), 13000);
+  assert.equal(varyNodeLimit(10000, 0.15, sequenceRandom(0, 0.5)), 7000);
 });
 
 test('指定した難易度を表示名付きで取得できる', async () => {
@@ -54,6 +68,13 @@ test('不正な係数と存在しない難易度IDを拒否する', async () => 
       easy: { ...difficulties.easy, move_rank_max_bonus: -1 },
     }),
     /move_rank_max_bonus/
+  );
+  assert.throws(
+    () => validateDifficulties({
+      ...difficulties,
+      normal: { ...difficulties.normal, node_limit_stddev_ratio: 0.6 },
+    }),
+    /node_limit_stddev_ratio/
   );
   await assert.rejects(
     loadDifficulty('missing', {
