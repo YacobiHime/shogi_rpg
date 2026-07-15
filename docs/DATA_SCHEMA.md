@@ -171,7 +171,7 @@ nav_order: 5
 ## 9. USI通信メッセージ（対局UI ⇔ 将棋AIエンジン）
 
 対局UI・将棋AIエンジン間はUSIプロトコルのテキストコマンドをそのまま利用する。
-エンジンは**メインスレッドから直接呼び出す方式**（`docs/CLAUDE.md`参照）で、
+エンジンは**メインスレッドから直接呼び出す方式**（`docs/AGENTS.md`参照）で、
 `engine.postMessage()` / `engine.addMessageListener()` を介してやり取りする。
 
 ```

@@ -86,6 +86,9 @@ nav_order: 7
 - `shogi.js`単体では判定されない打ち歩詰めを、プレイヤーが指せた問題を修正
 
 ### Changed
+
+- `AGENTS.md`を最小コンテキストで作業できる実務ガイドへ再編し、ルートからの発見用エントリを追加
+- `PROJECT_PLAN.md`へ現在地、次の主作業、M2〜M5の完了条件を追加し、旧ガイドへの参照を修正
 - NNUE指定時はHalfKP noeval版を使用し、ローダー取得・評価関数取得・エンジン初期化の
   いずれかに失敗した場合は通常版WASMの内蔵評価へ切り替えるよう変更
 - 対局UIが敵の`nnue_file`をエンジン初期化へ渡し、取得した評価関数を`preRun`で仮想FSへ
@@ -299,7 +302,7 @@ nav_order: 7
   全81マスに透明なクリック領域を敷く`_drawCellHitboxes()`を追加
 - `yaneuraou.data`が`vendor/`配下だけでは`404`になる問題に対応
   （`.data`はHTMLドキュメント基準の相対パスで解決されるため、
-  `src/board-ui/`直下にも配置。詳細は`docs/CLAUDE.md`「WASM将棋エンジン統合時の
+  `src/board-ui/`直下にも配置。詳細は`docs/AGENTS.md`「実装上の既知の罠」の
   必須知識」7.参照）
 - 開発用サーバーのドキュメントルートを`src/board-ui`ではなく`src/`に変更
   （`main.js`が`../engine/engine.js`を相対importするため）
@@ -307,7 +310,7 @@ nav_order: 7
 ### Notes
 - Playwright（ヘッドレスChromium）でボードをクリック操作し、人間の着手→
   エンジンの応答→手番復帰までの対局ループがブラウザ上で成立することを確認済み
-- `docs/CLAUDE.md`に上記`yaneuraou.data`のパス解決の落とし穴を追記
+- 現`docs/AGENTS.md`に上記`yaneuraou.data`のパス解決の落とし穴を記録
 
 ---
 
@@ -395,7 +398,7 @@ nav_order: 7
   `#loading-overlay:not([hidden])`にのみ`display: flex`を設定する形にした
 - `src/board-ui/main.js`: `setLoading()`を追加し、`engine.init()`（エンジン初期化）〜
   `engine.ready()`（`isready`応答待ち、本番評価関数では約1.3〜1.4秒かかる。
-  `docs/CLAUDE.md`6.参照）の間、ローディングオーバーレイでUIを隠すようにした。
+  現`docs/AGENTS.md`参照）の間、ローディングオーバーレイでUIを隠すようにした。
   `engine.newGame()`実行後にオーバーレイを非表示にする
 - 初期化失敗時（`main().catch`）もローディングオーバーレイにエラーメッセージを
   表示するよう変更（従来は`#status`テキストのみでオーバーレイが表示されたまま残っていた）

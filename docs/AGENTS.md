@@ -6,129 +6,107 @@ nav_order: 11
 
 # AGENTS.md
 
-このファイルはClaude Codeがこのリポジトリで作業する際に自動的に読み込む、プロジェクトの文脈情報です。
+この文書は、本リポジトリで作業するAIエージェントの標準手順である。
+**通常はこのファイルと [PROJECT_PLAN.md](./PROJECT_PLAN.md) だけを最初に読む。**
+詳細資料は下表に該当する変更を行うときだけ読むこと。
 
-## プロジェクト概要
+## 1. 最初に行うこと
 
-将棋の対局をコアバトルとするブラウザ向けRPG。物語の進行に応じて使用可能な戦形・アイテム・
-スキルが増え、敵（将棋AI）も段階的に強くなる。**無料の静的ホスティングで配信するため、
-将棋AIの推論を含むすべての処理をクライアントサイド（ブラウザ）で完結させる。サーバーサイド処理は持たない。**
+1. `git status --short`で既存変更を確認し、ユーザーの変更を上書きしない。
+2. `docs/PROJECT_PLAN.md`で現在のマイルストーン、次の作業、完了条件を確認する。
+3. 対象コードと近接テストを検索してから、最小範囲を変更する。
+4. 変更に対応するテストを実行し、必要な文書を同じ変更内で更新する。
 
-詳細な設計・仕様は `docs/` 配下を参照すること（作業前に必ず目を通す）：
+指示の優先順位は、ユーザーの依頼 > このファイル > `PROJECT_PLAN.md` > 対象機能の詳細文書・既存コード。
+仕様と実装が食い違う場合は推測で広げず、現在のテストとユーザー意図を確認する。
 
-- `README.md` — 全体概要
-- `SYSTEM_DESIGN.md` — アーキテクチャ、モジュール間連携
-- `SPECIFICATION.md` — 機能仕様
-- `DATA_SCHEMA.md` — 各種JSONデータのスキーマ定義（実装時はこれに厳密に従う）
-- `PROJECT_PLAN.md` — マイルストーンと優先順位
-- `GLOSSARY.md` — 将棋用語・ゲーム内用語の対応表（表記ゆれ防止のため必ず確認）
-- `CHANGELOG.md` — 決定事項の記録
+## 2. プロジェクトの不変条件
 
-## 技術スタック
+- 将棋をコアバトルにしたブラウザRPG。PC版Chromeが必須、スマートフォンは努力目標。
+- 本番はFirebase Hosting上の**静的アプリ**。AI思考、ルール、セーブをすべてブラウザ内で完結させ、サーバー処理を追加しない。
+- 対局UIはJavaScript ES Modules、インデント2スペース。盤面表現はSFEN、指し手はUSIを使う。
+- YaneuraOu.wasmはブラウザのメインスレッドから直接呼ぶ。外側のWeb Workerで包まない。
+- `cshogi` / `python-shogi`は`tools/`内の開発補助専用。本番コードや配布物へ入れない。
+- マスタデータは`data/*.json`を正とし、UIへ値を直書きしない。
+- コード上の用語は`formation`（表示上は「戦形」）。「囲い」と混同しそうな変更だけ`GLOSSARY.md`を確認する。
+- GPLv3互換かつ再配布可能と確認できた依存・素材だけを追加する。振電3の評価関数は配布物・マスタ・ビルドへ入れない。
+- 認証トークン、秘密鍵、サービスアカウント等をコミットしない。FirebaseプロジェクトID`shogi-64125`と公開URLは秘密ではない。
+- デプロイ、push、外部サービスの更新は、ユーザーが明示的に依頼した場合だけ行う。
 
-| レイヤー | 技術 |
+## 3. 構成と責務
+
+| パス | 責務 |
 |---|---|
-| 演出・進行管理 | ティラノスクリプト |
-| 対局UI | JavaScript（既存ライブラリ＋自作） |
-| 将棋AIエンジン | YaneuraOu.wasm（USIプロトコル、メインスレッドから直接呼び出し。詳細は下記「WASM将棋エンジン統合時の必須知識」） |
-| 開発補助 | cshogi / python-shogi（本番のブラウザ実行には使用しない） |
-| セーブ | localStorage ＋ 復活の呪文（文字列エンコード） |
+| `src/board-ui/` | 盤面、対局進行、準備画面、RPG効果、テスト |
+| `src/engine/` | YaneuraOu.wasmの初期化とUSI通信 |
+| `data/` | 敵、戦形、難易度、アイテム、解禁条件のマスタ |
+| `src/save/` | M3のセーブ・復活の呪文（未着手） |
+| `src/novel/`, `scenario/`, `tyrano/` | M4のノベル連携領域 |
+| `assets/` | 配布素材とNNUE。追加時は権利を確認 |
+| `tools/` | 開発・検証・Hostingビルド。配布ランタイムではない |
+| `dist/` | 生成物。直接編集しない |
+| `docs/` | 仕様、計画、決定記録 |
 
-## ディレクトリ構成（想定、`CONTRIBUTING.md`参照）
+## 4. 必要なときだけ読む文書
 
+| 変更内容 | 読む文書 | 同時に更新する文書 |
+|---|---|---|
+| 挙動・画面・ゲームルール | `SPECIFICATION.md` | `SPECIFICATION.md` |
+| モジュール境界・データフロー | `SYSTEM_DESIGN.md` | `SYSTEM_DESIGN.md` |
+| `data/*.json`または保存形式 | `DATA_SCHEMA.md` | スキーマ変更時は先に`DATA_SCHEMA.md` |
+| 用語・表示名 | `GLOSSARY.md` | 新語があれば`GLOSSARY.md` |
+| 素材・依存関係 | `ASSETS_CREDITS.md`, `LICENSE` | `ASSETS_CREDITS.md` |
+| 対局UIの起動・詳細 | `src/board-ui/README.md` | 手順が変わる場合のみ同README |
+| マイルストーンの状態・優先順位 | `PROJECT_PLAN.md` | `PROJECT_PLAN.md` |
+
+すべてのユーザー向け機能追加・修正は`CHANGELOG.md`の`[Unreleased]`にも簡潔に記録する。
+機械的リファクタやテストだけの変更では、挙動・契約が変わらなければ仕様文書の更新は不要。
+
+## 5. 実装上の既知の罠
+
+- NNUEはエンジン初期化前の`preRun`で仮想FSへ書き込む。初期化後の`FS.writeFile()`ではPThread側から見えない。
+- WASMとNNUEのアーキテクチャ（例: HalfKP）を一致させる。不一致でもエラー表示は曖昧。
+- `.data`はHTMLと同じ階層、`.wasm`はローダースクリプト基準で解決される。配置基準を混同しない。
+- 開発サーバーはCOOP/COEPと`Content-Length`を返す。既存の`src/board-ui/server.js`を使う。
+- 本番NNUEの`isready`には約1.3〜1.4秒かかるため、初期化中UIを消さない。
+- エンジン本体と評価関数を分離し、敵の個性はNNUE、ノード数、思考上限、MultiPVで表現する。
+- 通常難易度の敵探索量は着手ごとに正規分布で変動する。ヒント探索にはこの乱数と敵デバフを適用しない。
+- 「待った」は直前のプレイヤー着手と敵の応手を戻し、プレイヤー手番へ戻す。盤面だけでなく指し手・千日手履歴も復元する。
+
+動作実績のあるWASM統合例は`tools/m0-verification/`と`tools/m0-verification-suisho5/`にある。
+
+## 6. 標準コマンド
+
+プロジェクト直下から実行する。
+
+```powershell
+# 自動テスト
+npm --prefix src/board-ui test
+
+# Firebase Hosting用distを再生成
+node tools/build-hosting.mjs
+
+# ローカル起動（表示されたportを使用）
+node src/board-ui/server.js
+
+# 本番配信（明示依頼時のみ）
+npx firebase-tools deploy --only hosting
 ```
-/data          … 敵・戦形・アイテム等のマスタデータ（JSON）
-/src/engine    … 将棋AIエンジン（メインスレッド直接呼び出し）/ USI通信まわり
-/src/board-ui  … 対局UI
-/src/save      … セーブ・復活の呪文まわり
-/src/novel     … ティラノスクリプト連携
-/assets        … 画像・音声等の素材
-/docs          … 設計書・仕様書
-/tools         … 開発補助スクリプト（cshogi/python-shogi等、本番配布に含めない）
-```
 
-## 実装時の重要な制約
+代表URL:
 
-- **将棋AIエンジン（YaneuraOu.wasm）はメインスレッドから直接呼び出す**（Web Worker内から呼び出すと
-  `createObjectURL`エラーで動作しないため。M0検証で確定した方針、詳細は下記「WASM将棋エンジン統合時の必須知識」参照）
-- **cshogi / python-shogi をブラウザ実行コードに混入させない**。これらはPython実装であり `/tools` 配下の開発補助スクリプトでのみ使用する
-- **サーバーサイド処理を前提とした実装を提案しない**。無料静的ホスティング・サーバーレス構成が絶対条件
-- 敵データ・戦形データ・アイテムデータを追加/変更する際は `docs/DATA_SCHEMA.md` のスキーマに従うこと。スキーマ自体を変更する場合は先に `DATA_SCHEMA.md` を更新してから実装する
-- 評価関数（NNUEファイル）は自由配布が明言されているもの（リゼロ評価関数等）のみを扱う。ライセンス不明なファイルの追加を提案しない
-- **振電3（Shinden3）の評価関数（`shogiAI/Shinden3/eval/`）は配布物に含めない**（開発者への利用許諾確認待ちのため、`.gitignore`で除外済み）。この評価関数を`data/`配下のマスタデータや本番ビルドに組み込む提案・実装をしないこと。ローカル検証目的での参照のみ許可される
-- 「戦形」と「囲い」の用語は `GLOSSARY.md` に従い、コード上は `formation` に統一する
+- ローカル: `http://localhost:<port>/src/board-ui/index.html`
+- 本番: <https://shogi-64125.web.app/>
+- パラメータ: `?formation=standard&enemy=training_partner&difficulty=normal&item=node_limit_half`
 
-## WASM将棋エンジン統合時の必須知識（M0検証で判明、実装前に必読）
+## 7. 完了条件
 
-マイルストーン0で判明した、YaneuraOu.wasmをブラウザに統合する際の落とし穴。M1以降で
-対局UIとエンジンを本格的に結線する際、これを知らずに実装すると同じ問題に何度もぶつかる。
-検証環境の実物は `tools/m0-verification/`（arashigaoka軽量版）と
-`tools/m0-verification-suisho5/`（水匠5・hao本番候補版）にあり、動作実績のあるコード
-（特に`index-mainthread.html`系ファイルの`initEngine()`）をそのまま参考にすること。
+- 依頼された挙動が実装され、正常系だけでなく主要な失敗・境界条件も扱っている。
+- 変更箇所に最も近いテストを追加・更新し、`npm --prefix src/board-ui test`が通る。
+- 配信対象を変えた場合は`node tools/build-hosting.mjs`も通る。`dist/`は直接編集しない。
+- `git diff --check`が通り、無関係な既存変更を含めていない。
+- 上表に該当する文書と`CHANGELOG.md`を更新する。
+- マイルストーンを完了した場合だけ`PROJECT_PLAN.md`の状態と次の作業を更新する。
+- コミットする場合はConventional Commits（`feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `chore:`）を使う。
 
-1. **Web Worker内からYaneuraOu.wasmを呼び出さない。メインスレッドから直接呼び出す。**
-   Worker内から更にPThread用サブWorkerを生成する「入れ子Worker構成」は
-   `createObjectURL`のOverload resolutionエラーで無音に失敗する。
-   エンジン自体が内部でPThread化されているため、外側のWorkerでの多重化は不要かつ有害。
-   実測では3秒思考中でもUIフレーム間隔は理論値並み（約17.4ms、理論値16.7ms）で、
-   メインスレッド直接方式でもUIブロックは実用上問題にならないことを確認済み。
-
-2. **評価関数(nn.bin等)は`preRun`フックでモジュール初期化前に仮想ファイルシステムへ書き込む。**
-   初期化後に`engine.FS.writeFile()`すると、内部でプロキシされる別スレッドから見えず
-   `Error! : failed to read nn.bin`になる（原因が分かりにくい汎用エラーメッセージ）。
-   ```js
-   const nnBytes = new Uint8Array(await (await fetch('nn.bin')).arrayBuffer());
-   YaneuraOu_XXX({ preRun: [(mod) => mod.FS.writeFile('/nn.bin', nnBytes)] })
-     .then((instance) => { /* ここでusi等を送る */ });
-   ```
-
-3. **評価関数ファイルとWASMビルドのアーキテクチャ一致を必ず確認する。**
-   npmパッケージ名（例: `yaneuraou.halfkp`）だけではアーキテクチャを保証しない。
-   `usi`応答の`id name`と、評価関数ファイル先頭のヘッダー文字列
-   （`od -A x -t x1z nn.bin | head -4` で見える `Features=HalfKP(Friend)[...]` 等）を
-   突き合わせて一致を確認すること。不一致でも「アーキテクチャ不一致」とは表示されず、
-   汎用的な読み込み失敗エラーにしかならない。
-
-4. **開発用HTTPサーバーは`Content-Length`ヘッダーを明示的に返す必要がある。**
-   Node.jsのデフォルトのchunked転送のままだと、Emscriptenのfetch実装が使う`HEAD`
-   リクエストでファイルサイズを取得できず、大きなファイル（評価関数等）の読み込みが
-   失敗する。`tools/m0-verification-suisho5/server.js`に対応済みの実装例がある。
-
-5. **エンジン本体と評価関数は分離した設計にする。**
-   同一のWASMエンジンバイナリのまま、`nn.bin`を差し替えるだけで水匠5⇔haoのような
-   異なるAI人格に切り替えられることを実証済み（同一アーキテクチャの評価関数同士に限る）。
-   「敵の強さ・個性システム」は、エンジンを固定し評価関数ファイル/ノード数制限/最大思考時間/
-   MultiPV設定の組み合わせで表現する設計にすること。
-
-6. **isready応答（評価関数の解析）に本番評価関数では約1.3〜1.4秒かかる。**
-   arashigaoka軽量版（約28ms）に比べて大幅に長い。対局開始時にローディングUIで
-   吸収する設計にすること。
-
-7. **評価関数データファイル(`yaneuraou.data`)は、`yaneuraou.js`と同じ場所ではなく
-   HTMLドキュメント（`index.html`）と同じ階層に配置する必要がある。**
-   `.wasm`はスクリプト自身の場所を基準に解決されるが、`.data`はドキュメントの場所を
-   基準にした相対パスでfetchされるため、`vendor/`配下にしか置いていないと
-   `404 Not Found`になる（M1でscript側とdata側でパス解決基準が異なることが判明、
-   `src/board-ui/README.md`のセットアップ手順参照）。
-
-詳細な検証ログ・計測数値は `docs/CHANGELOG.md` の「検証記録」セクションを参照。
-
-
-
-## コーディング規約（`CONTRIBUTING.md`参照）
-
-- JavaScriptはES Modules、インデント2スペース
-- コミットメッセージは Conventional Commits（`feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `chore:`）
-- 将棋関連の変数名はSFEN/USI用語に準拠（`sfen`, `usiMove` 等）
-
-## ライセンス
-
-本プロジェクトはYaneuraOu（GPLv3系）を組み込むため、リポジトリ全体をGPLv3で公開する。
-新規に依存関係・素材を追加する場合はライセンス互換性を確認し、`ASSETS_CREDITS.md` に追記すること。
-
-## 作業完了時のチェックリスト
-
-- [ ] 関連するドキュメント（`SYSTEM_DESIGN.md` / `SPECIFICATION.md` / `DATA_SCHEMA.md`）を更新したか
-- [ ] `CHANGELOG.md` に変更点を記録したか
-- [ ] 新規素材・依存関係を追加した場合、`ASSETS_CREDITS.md` に記録したか
-- [ ] `PROJECT_PLAN.md` のどのマイルストーンに対応する作業かを意識しているか
+最終報告では、変更結果、重要な設計判断、実行した検証、未実施事項（特にデプロイ）だけを簡潔に伝える。
