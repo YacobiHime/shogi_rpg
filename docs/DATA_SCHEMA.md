@@ -112,7 +112,7 @@ nav_order: 5
 ```jsonc
 {
   "easy":   { "node_limit_mult": 0.5, "node_limit_stddev_ratio": 0,    "move_rank_max_bonus": 2 },
-  "normal": { "node_limit_mult": 1.0, "node_limit_stddev_ratio": 0.3,  "move_rank_max_bonus": 0 },
+  "normal": { "node_limit_mult": 1.0, "node_limit_stddev_ratio": 0.45, "move_rank_max_bonus": 0 },
   "hard":   { "node_limit_mult": 1.5, "node_limit_stddev_ratio": 0,    "move_rank_max_bonus": 0 }
 }
 ```
@@ -120,8 +120,9 @@ nav_order: 5
 - `easy` / `normal` / `hard` の3キーを必須とする
 - `node_limit_mult` は0より大きい数値とし、敵の`node_limit`へ乗算後、四捨五入して最低1に補正する
 - `node_limit_stddev_ratio` は0以上0.5以下の数値とする。敵が指すたびに実効ノード数を
-  平均値の比率で示した標準偏差を持つ正規分布で補正し、極端な探索量を避けるため平均値の
-  `1 ± 2 × node_limit_stddev_ratio` の範囲に制限する。`0`なら補正しない
+  平均値の比率で示した標準偏差を持つ正規分布を基に補正する。標準偏差2個分で制限した後、
+  正の偏差だけを半分に圧縮するため、倍率の範囲は
+  `1 - 2 × node_limit_stddev_ratio`〜`1 + node_limit_stddev_ratio`となる。`0`なら補正しない
 - `move_rank_max_bonus` は0以上の整数とし、敵の`move_rank.max`へ加算する
 - 実効範囲は`move_rank.min`から`move_rank.max + move_rank_max_bonus`までとし、
   その最大値をMultiPVの候補数として設定する
