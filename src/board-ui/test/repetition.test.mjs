@@ -69,3 +69,14 @@ test('途中に王手でない着手があれば連続王手にしない', () =>
   playCycle(tracker, false);
   assert.deepEqual(playCycle(tracker, true), { type: 'draw' });
 });
+
+test('待った後は取り消した着手の千日手履歴を捨てる', () => {
+  const tracker = new RepetitionTracker(sfen(POSITION_A, 1));
+  playCycle(tracker);
+
+  assert.equal(tracker.length, 3);
+  tracker.truncate(1);
+  assert.equal(tracker.length, 1);
+  assert.equal(playCycle(tracker), null);
+  assert.throws(() => tracker.truncate(0), /長さが不正/);
+});

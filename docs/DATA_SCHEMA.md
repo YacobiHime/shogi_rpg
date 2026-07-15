@@ -71,10 +71,14 @@ nav_order: 5
 
 - `enemy_debuff_nodes`の`effect_value`は、敵の探索ノード数へ掛ける倍率とする。
   0より大きく1以下を指定し、`0.5`なら探索量を50%にする
+- `hint` / `undo`の`effect_value`は、1以上の整数で対局中の使用可能回数を表す
 - 実効ノード数は`敵のnode_limit × 難易度のnode_limit_mult × effect_value`を
   四捨五入し、最低1に補正する。未装備時の倍率は1とする
 - 現在の対局準備画面では、プレイヤーレベル1で解禁済みかつ`consumable: false`の
   `enemy_debuff_nodes`を1つだけ装備できる
+- セーブデータと未結線のスタンドアロン対局では、レベル1で解禁済みの
+  `hint` / `undo`の`effect_value`合計をその対局の使用上限にする。M3結線後は
+  対局開始構成の`hints.max` / `undo.max`を優先する
 
 ## 4. レベルアップ／解禁テーブル（`data/level_unlocks.json`）
 

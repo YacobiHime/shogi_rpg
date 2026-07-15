@@ -49,4 +49,16 @@ export class RepetitionTracker {
     }
     return { type: 'draw' };
   }
+
+  get length() {
+    return this.records.length;
+  }
+
+  /** 待ったで局面を戻す際に、同じ手数以降の判定履歴を捨てる。 */
+  truncate(length) {
+    if (!Number.isInteger(length) || length < 1 || length > this.records.length) {
+      throw new Error('千日手履歴の長さが不正です');
+    }
+    this.records.length = length;
+  }
 }

@@ -9,7 +9,9 @@
   h1 { text-align: center; margin: 20px 12px 12px; }
   #status { font-size: 18px; margin: 12px; }
   #board-container { max-width: 560px; margin: 0 auto; }
-  #resign-button, #declare-win-button, #restart-button { margin: 0 12px 12px; }
+  #game-actions { display: flex; flex-wrap: wrap; gap: 10px; margin: 0 12px 12px; }
+  #game-actions button { margin: 0; padding: 7px 12px; }
+  #hint-message { min-height: 1.5em; margin: 0 12px 12px; color: #facc15; font-weight: bold; }
   #connection-status {
     margin: 12px; padding: 8px 12px; background: #6b3f00; border-radius: 4px;
   }
@@ -85,9 +87,14 @@
     </form>
   </section>
   <main id="game-screen">
-    <button id="resign-button" disabled>投了</button>
-    <button id="declare-win-button" disabled>入玉宣言</button>
-    <button id="restart-button">対局条件を選び直す</button>
+    <div id="game-actions">
+      <button id="hint-button" disabled>ヒント（残り0）</button>
+      <button id="undo-button" disabled>待った（残り0）</button>
+      <button id="resign-button" disabled>投了</button>
+      <button id="declare-win-button" disabled>入玉宣言</button>
+      <button id="restart-button">対局条件を選び直す</button>
+    </div>
+    <p id="hint-message" role="status" aria-live="polite"></p>
     <div id="board-container"></div>
   </main>
   <div id="result-overlay" hidden>
@@ -103,6 +110,6 @@
     <button id="loading-retry" hidden>再試行</button>
   </div>
 
-  <script type="module" src="./main.js?v=node-debuff-1"></script>
+  <script type="module" src="./main.js?v=match-assists-1"></script>
 </body>
 </html>

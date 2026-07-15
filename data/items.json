@@ -7,5 +7,23 @@
     "effect_value": 0.5,
     "stackable": false,
     "consumable": false
+  },
+  {
+    "item_id": "hint_ticket",
+    "name": "棋神の巻物",
+    "type": "hint",
+    "unlock_level": 1,
+    "effect_value": 2,
+    "stackable": true,
+    "consumable": true
+  },
+  {
+    "item_id": "undo_ticket",
+    "name": "待った札",
+    "type": "undo",
+    "unlock_level": 1,
+    "effect_value": 3,
+    "stackable": true,
+    "consumable": true
   }
 ]

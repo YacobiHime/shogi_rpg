@@ -21,6 +21,7 @@ import { loadFormation } from './formations.mjs';
 import {
   getNodeDebuffMultiplier,
   getNodeDebuffSkills,
+  getStandaloneAssistLimits,
   loadItems,
   selectItem,
 } from './items.mjs';
@@ -30,6 +31,7 @@ import {
   loadMatchSetupOptions,
 } from './match-setup.mjs';
 import { calculateEffectiveMoveRank, selectMoveByRank } from './move-selection.mjs';
+import { formatHintMove, getHintMove, TurnHistory } from './match-assists.mjs';
 import { resolveNnuePath } from './nnue.mjs';
 import { RepetitionTracker } from './repetition.mjs';
 
@@ -37,6 +39,9 @@ const statusEl = document.getElementById('status');
 const resignButton = document.getElementById('resign-button');
 const declareWinButton = document.getElementById('declare-win-button');
 const restartButton = document.getElementById('restart-button');
+const hintButton = document.getElementById('hint-button');
+const undoButton = document.getElementById('undo-button');
+const hintMessageEl = document.getElementById('hint-message');
 const connectionStatusEl = document.getElementById('connection-status');
 const resultOverlay = document.getElementById('result-overlay');
 const resultMessageEl = document.getElementById('result-message');
@@ -150,6 +155,8 @@ function setLoading(text) {
 function showResult(board, message) {
   resignButton.disabled = true;
   declareWinButton.disabled = true;
+  hintButton.disabled = true;
+  undoButton.disabled = true;
   board.lock();
   resultMessageEl.textContent = message;
   resultOverlay.hidden = false;
@@ -202,6 +209,11 @@ async function main() {
     throw new Error(`この対局では探索量デバフスキルだけを装備できます: ${itemId}`);
   }
   const nodeDebuffMultiplier = getNodeDebuffMultiplier(equippedItem);
+  const assistLimits = getStandaloneAssistLimits(items);
+  const hintNodeLimit = calculateEffectiveNodeLimit(
+    enemy.node_limit,
+    difficulty.node_limit_mult
+  );
   const effectiveNodeLimit = calculateEffectiveNodeLimit(
     enemy.node_limit,
     difficulty.node_limit_mult * nodeDebuffMultiplier
@@ -248,7 +260,26 @@ async function main() {
 
   let moveHistory = [];
   let gameOver = false;
+  let engineBusy = false;
+  let hintsUsed = 0;
+  let undoUsed = 0;
   const repetitionTracker = new RepetitionTracker(board.toSfen());
+  const turnHistory = new TurnHistory({
+    sfen: board.toSfen(),
+    moveHistoryLength: 0,
+    repetitionLength: repetitionTracker.length,
+  });
+
+  function updateAssistButtons() {
+    const humanTurn = board.isHumanTurn();
+    const hintsRemaining = Math.max(0, assistLimits.hints - hintsUsed);
+    const undoRemaining = Math.max(0, assistLimits.undo - undoUsed);
+    hintButton.textContent = `ヒント（残り${hintsRemaining}）`;
+    undoButton.textContent = `待った（残り${undoRemaining}）`;
+    hintButton.disabled = gameOver || engineBusy || !humanTurn || hintsRemaining === 0;
+    undoButton.disabled = gameOver || engineBusy || !humanTurn
+      || undoRemaining === 0 || !turnHistory.canUndo();
+  }
 
   function humanDeclarationStatus() {
     return evaluateEnteringKingDeclaration(
@@ -257,7 +288,7 @@ async function main() {
   }
 
   function updateDeclareWinButton() {
-    declareWinButton.disabled = gameOver || !humanDeclarationStatus().eligible;
+    declareWinButton.disabled = gameOver || engineBusy || !humanDeclarationStatus().eligible;
   }
 
   function finishByRepetition(result) {
@@ -292,9 +323,54 @@ async function main() {
     showResult(board, '入玉宣言によりあなたの勝利です。');
   });
 
+  hintButton.addEventListener('click', async () => {
+    if (gameOver || engineBusy || !board.isHumanTurn()
+      || hintsUsed >= assistLimits.hints) return;
+    engineBusy = true;
+    hintMessageEl.textContent = '読み筋を計算中...';
+    updateAssistButtons();
+    updateDeclareWinButton();
+    try {
+      const moves = moveHistory.length ? ' moves ' + moveHistory.join(' ') : '';
+      engine.setPosition(formation.start_sfen + moves);
+      const searchResult = await engine.go({
+        nodes: hintNodeLimit,
+        maxTimeMs: enemy.max_think_time_ms,
+      });
+      const hintMove = getHintMove(searchResult);
+      hintsUsed += 1;
+      hintMessageEl.textContent = `ヒント: ${formatHintMove(hintMove)}`;
+    } catch (error) {
+      console.error('ヒントの取得に失敗しました', error);
+      hintMessageEl.textContent = 'ヒントを取得できませんでした。';
+    } finally {
+      engineBusy = false;
+      updateAssistButtons();
+      updateDeclareWinButton();
+    }
+  });
+
+  undoButton.addEventListener('click', () => {
+    if (gameOver || engineBusy || !board.isHumanTurn()
+      || undoUsed >= assistLimits.undo) return;
+    const snapshot = turnHistory.undo();
+    if (!snapshot) return;
+    undoUsed += 1;
+    moveHistory.length = snapshot.moveHistoryLength;
+    repetitionTracker.truncate(snapshot.repetitionLength);
+    board.restoreSfen(snapshot.sfen);
+    hintMessageEl.textContent = '';
+    setStatus('待ったを使いました。指し直してください。');
+    updateDeclareWinButton();
+    updateAssistButtons();
+  });
+
   async function onHumanMove(usiMove) {
     if (gameOver) return;
+    engineBusy = true;
+    hintMessageEl.textContent = '';
     declareWinButton.disabled = true;
+    updateAssistButtons();
     moveHistory.push(usiMove);
 
     if (finishByRepetition(repetitionTracker.record(
@@ -347,12 +423,20 @@ async function main() {
       return;
     }
 
+    engineBusy = false;
+    turnHistory.record({
+      sfen: board.toSfen(),
+      moveHistoryLength: moveHistory.length,
+      repetitionLength: repetitionTracker.length,
+    });
     updateDeclareWinButton();
+    updateAssistButtons();
     const skillLabel = equippedItem ? `／${equippedItem.name}` : '';
     setStatus(`${enemy.name}／${formation.name}／${difficulty.name}${skillLabel}：あなたの番です`);
   }
 
   updateDeclareWinButton();
+  updateAssistButtons();
   const skillLabel = equippedItem ? `／${equippedItem.name}` : '';
   setStatus(`${enemy.name}／${formation.name}／${difficulty.name}${skillLabel}：あなたの番です（先手）`);
 }

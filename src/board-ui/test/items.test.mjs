@@ -6,6 +6,7 @@ import { calculateEffectiveNodeLimit } from '../difficulty.mjs';
 import {
   getNodeDebuffMultiplier,
   getNodeDebuffSkills,
+  getStandaloneAssistLimits,
   selectItem,
   validateItems,
 } from '../items.mjs';
@@ -36,6 +37,13 @@ test('未装備なら探索ノード数を補正しない', async () => {
   assert.equal(getNodeDebuffMultiplier(null), 1);
 });
 
+test('単独対局用のヒントと待った回数を読み込める', async () => {
+  const items = validateItems(await readItems());
+
+  assert.deepEqual(getStandaloneAssistLimits(items), { hints: 2, undo: 3 });
+  assert.throws(() => getStandaloneAssistLimits(items, 0), /playerLevel/);
+});
+
 test('現在のプレイヤーレベルで未解禁のスキルを準備画面へ出さない', async () => {
   const [item] = validateItems(await readItems());
   const levelTwoSkill = { ...item, item_id: 'level_two', unlock_level: 2 };
@@ -57,6 +65,15 @@ test('重複IDと不正な探索ノード倍率を拒否する', async () => {
     () => validateItems([{ ...item, effect_value: 1.1 }]),
     /探索ノード倍率/
   );
+});
+
+test('ヒントと待ったの使用回数は1以上の整数に限定する', async () => {
+  const items = await readItems();
+  const hint = items.find((item) => item.type === 'hint');
+  const undo = items.find((item) => item.type === 'undo');
+
+  assert.throws(() => validateItems([{ ...hint, effect_value: 0 }]), /使用回数/);
+  assert.throws(() => validateItems([{ ...undo, effect_value: 1.5 }]), /使用回数/);
 });
 
 test('存在しないIDと異なる種類のアイテム適用を拒否する', async () => {

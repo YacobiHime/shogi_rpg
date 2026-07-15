@@ -14,6 +14,14 @@ test('展示運用に必要な復旧操作が画面に用意されている', as
   assert.match(html, /id="connection-status"[^>]*role="status"[^>]*hidden/);
 });
 
+test('ヒントと待ったの操作と残り回数表示が用意されている', async () => {
+  const html = await readFile(indexUrl, 'utf8');
+
+  assert.match(html, /id="hint-button"[^>]*>ヒント（残り0）</);
+  assert.match(html, /id="undo-button"[^>]*>待った（残り0）</);
+  assert.match(html, /id="hint-message"[^>]*role="status"/);
+});
+
 test('復旧操作とオンライン状態のイベントがエントリポイントに接続されている', async () => {
   const source = await readFile(mainUrl, 'utf8');
 

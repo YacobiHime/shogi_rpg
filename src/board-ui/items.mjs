@@ -54,6 +54,10 @@ export function validateItems(data) {
         `${item.item_id}.effect_valueは0より大きく1以下の探索ノード倍率にしてください`
       );
     }
+    if ((item.type === 'hint' || item.type === 'undo')
+      && (!Number.isInteger(item.effect_value) || item.effect_value < 1)) {
+      throw new Error(`${item.item_id}.effect_valueは1以上の使用回数にしてください`);
+    }
   }
 
   return data;
@@ -117,4 +121,18 @@ export function getNodeDebuffMultiplier(item) {
     throw new Error('探索ノード倍率は0より大きく1以下にしてください');
   }
   return item.effect_value;
+}
+
+/**
+ * セーブデータ未使用の単独対局用に、解禁済みの補助機能の使用回数を返す。
+ * M3結線後は対局開始構成のhints/undoを優先する。
+ */
+export function getStandaloneAssistLimits(items, playerLevel = 1) {
+  if (!Number.isInteger(playerLevel) || playerLevel < 1) {
+    throw new Error('playerLevelは1以上の整数にしてください');
+  }
+  const limitFor = (type) => items
+    .filter((item) => item.type === type && item.unlock_level <= playerLevel)
+    .reduce((sum, item) => sum + item.effect_value, 0);
+  return { hints: limitFor('hint'), undo: limitFor('undo') };
 }

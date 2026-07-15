@@ -273,6 +273,18 @@ export class BoardView {
     this.locked = true;
   }
 
+  /** 待ったで保存済みの局面へ戻し、選択状態も解除する。 */
+  restoreSfen(sfen) {
+    this.shogi.initializeFromSFENString(sfen);
+    this.selected = null;
+    this._awaitingPromotion = false;
+    this.render();
+  }
+
+  isHumanTurn() {
+    return !this.locked && this.shogi.turn === this.humanColor;
+  }
+
   _handleCellClick(x, y) {
     if (this.locked || this._awaitingPromotion) return;
     if (this.shogi.turn !== this.humanColor) return; // 自分の手番以外は無視
