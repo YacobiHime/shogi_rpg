@@ -15,7 +15,6 @@ export function createNovelResultReporter(windowObject, params) {
     formationId: params.get('formation'),
     difficultyId: params.get('difficulty'),
     itemId: params.get('item'),
-    startSfen: params.get('start_sfen'),
   });
   let sent = false;
   return {
