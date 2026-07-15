@@ -25,5 +25,23 @@
     "effect_value": 3,
     "stackable": true,
     "consumable": true
+  },
+  {
+    "item_id": "thinking_hourglass",
+    "name": "思考の砂時計",
+    "type": "enemy_debuff_nodes",
+    "unlock_level": 3,
+    "effect_value": 0.5,
+    "stackable": true,
+    "consumable": true
+  },
+  {
+    "item_id": "confusion_incense",
+    "name": "迷いの香",
+    "type": "enemy_debuff_rank",
+    "unlock_level": 5,
+    "effect_value": 2,
+    "stackable": true,
+    "consumable": true
   }
 ]

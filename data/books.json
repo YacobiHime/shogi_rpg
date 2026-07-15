@@ -1,0 +1,192 @@
+[
+  {
+    "book_id": "shogi_basics",
+    "title": "将棋の基本原理",
+    "chapter": 1,
+    "summary": "駒の利きを重ね、玉を戦場から離して守る考え方を学ぶ。",
+    "start_sfen": "lnsgkgsnl/1r5b1/ppppppppp/9/9/9/PPPPPPPPP/1B5R1/LNSGKGSNL b - 1",
+    "in_match": true,
+    "steps": [
+      { "move": "7g7f", "reply": "3c3d", "title": "角道を開ける", "text": "歩を一つ進め、角を働かせる道を作ります。相手の角道にも注意しましょう。", "highlights": ["8h", "2b"] },
+      { "move": "6i7h", "reply": "4a3b", "title": "金を玉の近くへ", "text": "攻めが始まる前に金を寄せます。玉と守り駒を近づけるのが序盤の基本です。", "highlights": ["5i", "7h"] },
+      { "move": "5i6h", "reply": "5a4b", "title": "玉を戦場から離す", "text": "飛車がいる右側から玉を離します。まず安全な場所を作ってから攻めましょう。", "highlights": ["6h", "2h"] },
+      { "move": "6h7g", "reply": "4b3c", "title": "守りの形を整える", "text": "玉を金へ近づけました。駒同士の利きが重なる場所は、一枚だけの場所より安全です。", "highlights": ["7g", "7h"] }
+    ]
+  },
+  {
+    "book_id": "head_gold",
+    "title": "終盤の基本・頭金",
+    "chapter": 1,
+    "summary": "逃げ道をふさぎ、別の駒に支えられた金で詰ませる形を学ぶ。",
+    "start_sfen": "4k4/9/4R4/9/9/9/9/9/4K4 b G 1",
+    "in_match": false,
+    "steps": [
+      { "move": "G*5b", "reply": null, "title": "金を玉の頭へ", "text": "5二の金は相手玉の逃げ道をすべて押さえます。5三の飛車が金を支えるため、玉は金を取れません。", "highlights": ["5a", "4a", "6a", "5b", "5c"] }
+    ]
+  },
+  {
+    "book_id": "bogin",
+    "title": "基本の棒銀",
+    "chapter": 2,
+    "summary": "飛車先の歩を伸ばし、銀を2筋へまっすぐ進めて突破する。",
+    "start_sfen": "lnsgkgsnl/1r5b1/ppppppppp/9/9/9/PPPPPPPPP/1B5R1/LNSGKGSNL b - 1",
+    "in_match": true,
+    "steps": [
+      { "move": "2g2f", "reply": "8c8d", "title": "飛車先の歩", "text": "飛車の前の歩を伸ばし、2筋に攻めの道を作ります。", "highlights": ["2h", "2f"] },
+      { "move": "2f2e", "reply": "8d8e", "title": "歩をもう一歩", "text": "歩を五段目まで進め、相手の歩へ圧力をかけます。", "highlights": ["2e", "2c"] },
+      { "move": "3i3h", "reply": "4a3b", "title": "銀を上げる", "text": "銀を3八へ上げます。飛車先へ向かう棒銀の出発点です。", "highlights": ["3h", "2g"] },
+      { "move": "3h2g", "reply": "3c3d", "title": "銀を飛車先へ", "text": "銀を2七へ寄せ、歩と飛車の近くへ運びます。", "highlights": ["2g", "2e", "2h"] },
+      { "move": "2g2f", "reply": "2b3c", "title": "銀を前線へ", "text": "銀を2六へ進めました。次は1五または3五へ出る手を狙います。", "highlights": ["2f", "1e", "3e"] }
+    ]
+  },
+  {
+    "book_id": "shikenbisha",
+    "title": "四間飛車",
+    "chapter": 3,
+    "summary": "角道を開け、飛車を6筋へ振って攻守の役割を分ける。",
+    "start_sfen": "lnsgkgsnl/1r5b1/ppppppppp/9/9/9/PPPPPPPPP/1B5R1/LNSGKGSNL b - 1",
+    "in_match": true,
+    "steps": [
+      { "move": "7g7f", "reply": "8c8d", "title": "角道を開ける", "text": "振り飛車でも角を働かせる準備から始めます。", "highlights": ["8h", "7f"] },
+      { "move": "6g6f", "reply": "8d8e", "title": "6筋の歩", "text": "飛車を振る先の歩を進め、6筋に空間を作ります。", "highlights": ["6h", "6f"] },
+      { "move": "2h6h", "reply": "6a5b", "title": "飛車を四間へ", "text": "飛車を6八へ移動します。角の後ろを通れるのは、7六歩で角道を開けた効果です。", "highlights": ["2h", "6h"] },
+      { "move": "5i4h", "reply": "5a4b", "title": "玉は反対側へ", "text": "飛車と反対の右側へ玉を動かし、攻めと守りを分けます。", "highlights": ["4h", "6h"] }
+    ]
+  },
+  {
+    "book_id": "mino",
+    "title": "美濃囲い",
+    "chapter": 3,
+    "summary": "四間飛車と相性の良い、短い手数で堅い囲いを作る。",
+    "start_sfen": "lnsgkgsnl/1r5b1/ppppppppp/9/9/9/PPPPPPPPP/1B3R3/LNSGKGSNL b - 1",
+    "in_match": false,
+    "steps": [
+      { "move": "5i4h", "reply": "8c8d", "title": "玉を右へ", "text": "振った飛車と反対側へ玉を移します。", "highlights": ["4h", "6h"] },
+      { "move": "4h3h", "reply": "8d8e", "title": "さらに右へ", "text": "玉を3八へ。戦場になりやすい中央から離れます。", "highlights": ["3h"] },
+      { "move": "3h2h", "reply": "6a5b", "title": "玉を2八へ", "text": "玉を2八へ収めます。端に寄せすぎず、逃げ道も残る位置です。", "highlights": ["2h", "1h"] },
+      { "move": "3i3h", "reply": "5a4b", "title": "銀で城壁を作る", "text": "銀を3八へ上げ、玉の斜め前を守ります。", "highlights": ["3h", "2h"] },
+      { "move": "4i5h", "reply": "4a3b", "title": "金銀を連結する", "text": "金を5八へ上げると、金と銀の利きがつながります。", "highlights": ["5h", "3h"] }
+    ]
+  },
+  {
+    "book_id": "right_shiken",
+    "title": "右四間飛車",
+    "chapter": 4,
+    "summary": "4筋へ飛車・歩・銀の力を集め、角道を止めた四間飛車を攻める。",
+    "start_sfen": "lnsgkgsnl/1r5b1/ppppppppp/9/9/9/PPPPPPPPP/1B5R1/LNSGKGSNL b - 1",
+    "in_match": true,
+    "steps": [
+      { "move": "7g7f", "reply": "3c3d", "title": "相手の角道を見る", "text": "まず角道を開け、相手も角道を開けるか確認します。", "highlights": ["8h", "2b"] },
+      { "move": "4g4f", "reply": "4c4d", "title": "4筋の歩", "text": "相手が4四歩で角道を止めました。こちらは4筋へ攻めを集めます。", "highlights": ["4f", "4d"] },
+      { "move": "2h4h", "reply": "8b4b", "title": "飛車を右四間へ", "text": "飛車を4八へ寄せます。4筋の歩の後ろから突破を支えます。", "highlights": ["4h", "4f"] },
+      { "move": "3i3h", "reply": "6a5b", "title": "銀を攻めへ参加", "text": "銀を3八へ上げ、次に4七へ進んで4筋を支える準備です。", "highlights": ["3h", "4g"] },
+      { "move": "3h4g", "reply": "5a6b", "title": "三枚の攻め", "text": "飛車、銀、歩の力が4筋へ集まりました。仕掛ける前に自玉の安全も確認します。", "highlights": ["4h", "4g", "4f"] }
+    ]
+  },
+  {
+    "book_id": "elmo",
+    "title": "エルモ囲い",
+    "chapter": 4,
+    "summary": "右四間飛車の攻め駒を残しながら、少ない手数で玉を守る。",
+    "start_sfen": "lnsgkgsnl/1r5b1/ppppppppp/9/9/9/PPPPPPPPP/1B5R1/LNSGKGSNL b - 1",
+    "in_match": true,
+    "steps": [
+      { "move": "7g7f", "reply": "3c3d", "title": "角道を開ける", "text": "エルモ囲いでも、まず角を働かせる準備をします。", "highlights": ["8h", "7f"] },
+      { "move": "4g4f", "reply": "4c4d", "title": "右四間の準備", "text": "攻める4筋の歩を伸ばします。", "highlights": ["4f", "4d"] },
+      { "move": "5i6h", "reply": "8b4b", "title": "玉を6八へ", "text": "玉を左へ一つ移し、短い囲いを始めます。", "highlights": ["6h"] },
+      { "move": "6h7h", "reply": "6a5b", "title": "玉を7八へ", "text": "角の隣へ玉を運びます。相手の角筋には十分注意します。", "highlights": ["7h", "8h"] },
+      { "move": "6i5h", "reply": "5a6b", "title": "金を5八へ", "text": "金を中央寄りに置き、玉と攻め側の両方を支えます。", "highlights": ["5h", "7h"] },
+      { "move": "3i4h", "reply": "7a7b", "title": "銀を4八へ", "text": "銀を攻めにも守りにも使える位置へ上げ、エルモ囲いの骨格を作ります。", "highlights": ["4h", "5h", "7h"] }
+    ]
+  },
+  {
+    "book_id": "kakugawari",
+    "title": "角換わり入門",
+    "chapter": 5,
+    "summary": "角を交換した後、相手の角打ちの隙を作らず駒組みする。",
+    "start_sfen": "lnsgkgsnl/1r5b1/ppppppppp/9/9/9/PPPPPPPPP/1B5R1/LNSGKGSNL b - 1",
+    "in_match": true,
+    "steps": [
+      { "move": "7g7f", "reply": "8c8d", "title": "角道を開ける", "text": "角交換へ進めるため、互いの角道を意識します。", "highlights": ["8h", "2b"] },
+      { "move": "2g2f", "reply": "3c3d", "title": "飛車先も伸ばす", "text": "居飛車らしく2筋の歩を進めます。", "highlights": ["2h", "2f"] },
+      { "move": "2f2e", "reply": "8d8e", "title": "角の頭を守らせる", "text": "2五歩で相手に3三角などの対応を意識させます。", "highlights": ["2e", "2b"] },
+      { "move": "8h2b+", "reply": "3a2b", "title": "角を交換する", "text": "角を交換しました。以後は盤上の空いた場所すべてが角打ちの候補になります。", "highlights": ["2b", "8h"] }
+    ]
+  },
+  {
+    "book_id": "yokofudori",
+    "title": "横歩取り入門",
+    "chapter": 5,
+    "summary": "飛車先を交換し、横の歩を取る前に飛車の安全と相手の反撃を見る。",
+    "start_sfen": "lnsgkgsnl/1r5b1/ppppppppp/9/9/9/PPPPPPPPP/1B5R1/LNSGKGSNL b - 1",
+    "in_match": true,
+    "steps": [
+      { "move": "2g2f", "reply": "8c8d", "title": "互いの飛車先", "text": "双方が飛車先の歩を伸ばす形から始まります。", "highlights": ["2f", "8d"] },
+      { "move": "2f2e", "reply": "8d8e", "title": "五段目へ", "text": "飛車先の交換へ近づきます。", "highlights": ["2e", "8e"] },
+      { "move": "7g7f", "reply": "3c3d", "title": "横歩を作る", "text": "角道を開けると、3四の歩が飛車で取れる横歩になります。", "highlights": ["3d", "2h"] },
+      { "move": "2e2d", "reply": "2c2d", "title": "歩を交換", "text": "飛車先で歩をぶつけ、相手の歩を前へ呼びます。", "highlights": ["2d"] },
+      { "move": "2h2d", "reply": "8b8d", "title": "飛車を前へ", "text": "飛車で歩を取りました。次の3四歩取りだけでなく、飛車の帰り道も見ます。", "highlights": ["2d", "3d"] },
+      { "move": "2d3d", "reply": "4a3b", "title": "横歩を取る", "text": "3四の歩を横から取りました。相手の飛車・角の反撃へ備えましょう。", "highlights": ["3d", "8d", "2b"] }
+    ]
+  },
+  {
+    "book_id": "aigakari",
+    "title": "相掛かり入門",
+    "chapter": 5,
+    "summary": "互いに飛車先を交換し、浮き飛車と守りの金の役割を学ぶ。",
+    "start_sfen": "lnsgkgsnl/1r5b1/ppppppppp/9/9/9/PPPPPPPPP/1B5R1/LNSGKGSNL b - 1",
+    "in_match": true,
+    "steps": [
+      { "move": "2g2f", "reply": "8c8d", "title": "飛車先を伸ばす", "text": "互いに居飛車のまま、飛車先の歩を進めます。", "highlights": ["2f", "8d"] },
+      { "move": "2f2e", "reply": "8d8e", "title": "形をそろえる", "text": "似た形でも、一手の違いが後の展開を変えます。", "highlights": ["2e", "8e"] },
+      { "move": "6i7h", "reply": "4a3b", "title": "金で飛車先を守る", "text": "7八金と3二金で、飛車を交換した後の打ち込みへ備えます。", "highlights": ["7h", "3b"] },
+      { "move": "2e2d", "reply": "2c2d", "title": "飛車先交換", "text": "歩をぶつけて飛車の道を開きます。", "highlights": ["2d"] },
+      { "move": "2h2d", "reply": "8e8f", "title": "飛車で歩を取る", "text": "飛車が前へ出ました。相手も8筋で同じ交換を狙います。", "highlights": ["2d", "8f"] },
+      { "move": "8g8f", "reply": "8b8f", "title": "互いの飛車が働く", "text": "相手の飛車も前へ出ました。飛車を追う手と自陣を整える手を比べます。", "highlights": ["2d", "8f"] }
+    ]
+  },
+  {
+    "book_id": "anaguma",
+    "title": "穴熊の組み方",
+    "chapter": 6,
+    "summary": "玉を隅へ深く入れ、金銀でふたをする堅い囲いを作る。",
+    "start_sfen": "lnsgkgsnl/1r5b1/ppppppppp/9/9/9/PPPPPPPPP/1B5R1/LNSGKGSNL b - 1",
+    "in_match": true,
+    "steps": [
+      { "move": "7g7f", "reply": "8c8d", "title": "角道を開ける", "text": "穴熊へ組む前にも、駒が動ける道を確保します。", "highlights": ["8h", "7f"] },
+      { "move": "6g6f", "reply": "8d8e", "title": "振り飛車の準備", "text": "ここでは四間飛車穴熊を目指します。", "highlights": ["6f"] },
+      { "move": "2h6h", "reply": "6a5b", "title": "飛車を振る", "text": "玉を右の隅へ運ぶため、飛車を反対側へ移します。", "highlights": ["6h", "1i"] },
+      { "move": "5i4h", "reply": "5a4b", "title": "玉の長い旅", "text": "穴熊は完成まで手数がかかります。相手の仕掛けを毎手確認します。", "highlights": ["4h", "1i"] },
+      { "move": "4h3h", "reply": "4b3b", "title": "玉を右へ", "text": "3八へ進みます。", "highlights": ["3h"] },
+      { "move": "3h2h", "reply": "3a4b", "title": "2八へ", "text": "さらに隅へ近づきます。", "highlights": ["2h", "1i"] },
+      { "move": "2h1h", "reply": "3c3d", "title": "玉を1八へ", "text": "玉が最も端へ入りました。次に香車を上げて1九へ潜る形もあります。", "highlights": ["1h", "1i"] },
+      { "move": "3i2h", "reply": "2b3c", "title": "銀でふたをする", "text": "銀を玉の前へ置き、金銀で穴熊の入口を閉じていきます。", "highlights": ["2h", "1h"] }
+    ]
+  },
+  {
+    "book_id": "anaguma_break",
+    "title": "穴熊の崩し方",
+    "chapter": 6,
+    "summary": "端攻め、と金、金銀をはがす攻め、大駒を切る判断を学ぶ。",
+    "start_sfen": "lnsgkgsnl/1r5b1/ppppppppp/9/9/9/PPPPPPPPP/1B5R1/LNSGKGSNL b - 1",
+    "in_match": false,
+    "steps": [
+      { "move": "9g9f", "reply": "9c9d", "title": "端へ争点を作る", "text": "穴熊は玉が端にいるため、端歩の交換が直接攻めにつながります。", "highlights": ["9f", "9d"] },
+      { "move": "7g7f", "reply": "3c3d", "title": "角の線も使う", "text": "端だけでなく、角の斜めの利きを重ねると守り駒を狙えます。", "highlights": ["8h", "2b"] },
+      { "move": "6g6f", "reply": "8c8d", "title": "歩を育てる", "text": "歩を敵陣へ進め、と金にして金銀へ近づける遅い攻めも有力です。", "highlights": ["6f"] },
+      { "move": "2h6h", "reply": "8d8e", "title": "攻め駒を足す", "text": "歩だけで足りなければ飛車や角を同じ場所へ集めます。大駒を切るのは後続がある時です。", "highlights": ["6h", "8h"] }
+    ]
+  },
+  {
+    "book_id": "endgame",
+    "title": "終盤の速度",
+    "chapter": 7,
+    "summary": "自玉と相手玉の詰みまでの手数を比べ、攻めるか受けるかを選ぶ。",
+    "start_sfen": "4k4/9/9/9/9/9/9/4G4/4K4 b R2G 1",
+    "in_match": false,
+    "steps": [
+      { "move": "R*5b", "reply": "5a4a", "title": "逃げ道を限定する", "text": "王手の目的は追い回すことではなく、相手玉の行き先を減らすことです。", "highlights": ["5b", "4a"] },
+      { "move": "G*4b", "reply": null, "title": "支えのある金", "text": "金で逃げ道をふさぎます。王手を続ける前に、自玉へ詰みがないことも確認しましょう。", "highlights": ["4b", "4a", "5b"] }
+    ]
+  }
+]

@@ -107,6 +107,11 @@ nav_order: 5
 - localStorageの`player_level`を正とする。保存データがない初回だけURLクエリ
   `?level=<1〜255>`を初期値として取り込み、省略時はレベル1とする
 
+本編version 2では、この表をレベル由来の補助回数・任意アイテム解禁に限定する。
+次章の攻略に必要な戦形・基本ガイドは、別途追加する章報酬マスタからボス撃破時または章解禁時に付与し、
+低レベルでボスへ直行したプレイヤーを次章で進行不能にしない。章報酬マスタの正確なIDと構造は、
+本編マスタ実装前に本書へ追記する。
+
 ## 5. 難易度係数テーブル（`data/difficulty.json`）
 
 ```jsonc
@@ -166,6 +171,8 @@ repetition | perpetual_check`、`move_count`は0以上の整数とする。
 
 ## 7. セーブデータ（localStorage、`shogi_rpg_save`キー）
 
+### 7.1 現行形式（version 1）
+
 ```jsonc
 {
   "version": 1,
@@ -188,7 +195,47 @@ repetition | perpetual_check`、`move_count`は0以上の整数とする。
 - JSON欠損は安全に補完し、解析不能・未知ID・範囲外値などの破損時は警告付きで初期状態へ復旧する
 - `updated_at`はISO 8601日時。復活の呪文には含めず、保存時に更新する
 
-## 8. 復活の呪文（エンコード対象のビット構造）
+### 7.2 本編用の予定形式（version 2）
+
+本編機能の実装時に、次の形式へ版番号付きで移行する。実装が切り替わるまでは7.1を現行形式とする。
+
+```jsonc
+{
+  "version": 2,
+  "player_name": "やまと",                 // 1〜12文字の表示用テキスト
+  "name_suffix": "kun",                    // "kun" | "chan"
+  "chapter": 5,                             // 解禁済みの最新章
+  "current_location": "chapter3_village", // location_id
+  "player_level": 12,
+  "experience": 1450,
+  "currency": 320,                          // ゲーム内通貨「棋貨」の所持数
+  "unlocked_formations": ["mino_gakoi"],
+  "unlocked_items": ["hint_ticket"],
+  "defeated_enemies": ["chapter1_villager1", "chapter1_boss"],
+  "unlocked_books": ["shogi_basics", "bogin"],
+  "opened_chests": ["chapter1.chest1"],
+  "completed_tutorials": ["basics_piece_control"],
+  "quest_states": { "chapter1.quest1": "completed" },
+  "item_counts": { "hint_ticket": 3, "undo_ticket": 2 },
+  "difficulty": "normal",
+  "updated_at": "2026-07-15T00:00:00Z"
+}
+```
+
+- `player_name`は前後の空白を除いた1〜12文字とし、HTMLまたはティラノタグとして解釈しない
+- `name_suffix`は夜古火姫からの呼ばれ方を表し、表示時に`player_name`へ「くん」または「ちゃん」を付ける
+- `experience`と`currency`は0以上の安全な上限内の整数とし、上限値は成長・経済マスタと同時に確定する
+- `defeated_enemies`は通常敵とボスの初回勝利を同じID配列で保存し、初回経験値の二重取得を防ぐ
+- 章クリアは、その章のボスIDが`defeated_enemies`に含まれることから判定する
+- `quest_states`は`not_started | active | completed`のいずれかとする。`not_started`は省略できる
+- ID配列と状態キーは各マスタに存在する値だけを許可し、重複を許さない
+- version 1からは、既存の`defeated_bosses`を`defeated_enemies`へ引き継ぎ、
+  追加フィールドを安全な初期値で補完する。未知IDや破損は従来どおり警告して復旧する
+- localStorage以外のサーバー、Cookie、外部データベースへ進行データを送信しない
+
+## 8. 復活の呪文
+
+### 8.1 現行16文字形式（version 1、将来は読込専用）
 
 | フィールド | ビット幅 | 備考 |
 |---|---|---|
@@ -207,6 +254,19 @@ repetition | perpetual_check`、`move_count`は0以上の整数とする。
   専用ボスマスタ導入までは`enemies.json`の配列順で最大32件を割り当てる。既存要素の順番は変更しない
 - 解禁済みアイテムは`player_level`と解禁表から復元し、個数はヒント札・待った札だけを格納する
 - `version`と`updated_at`は呪文に含めず、復元時に現行バージョンと現在日時を設定する
+
+### 8.2 本編用の予定形式（version 2、可変長）
+
+- 接頭辞を`SR2-`とし、version 1と入力時に判別できるようにする
+- プレイヤー名をUTF-8で格納し、進行データは安定したマスタ順のビット集合と整数へ圧縮する
+- プレイヤー名、呼ばれ方、章、レベル、経験値、通貨、難易度、敵の初回勝利、戦形、
+  アイテム、定跡書、宝箱、講座、サブクエストの状態を対象とする
+- 対局途中の局面、現在の一時演出、`updated_at`は対象外とする
+- 誤入力と破損を検出するチェックサム、保存形式版、コンテンツカタログ版を含める
+- 判別しにくい文字を除いた文字セットを使い、画面上は一定文字数ごとに区切る
+- 生成、検証、復元はすべてブラウザ内で行い、サーバーへ文字列やセーブ内容を送らない
+- version 1の16文字形式は引き続き入力でき、不足するversion 2項目を初期値で補完する
+- 正確なビット幅と最大文字数は、本編マスタのID件数を確定してから実装前に本節へ追記する
 
 ## 9. USI通信メッセージ（対局UI ⇔ 将棋AIエンジン）
 
