@@ -265,11 +265,11 @@ export function formatSaveCode(code) {
 }
 
 /** 現行進行状態をversion 2の可変長復活の呪文へ変換する。 */
-export function encodeSaveCode(state) {
-  if (!state || state.version !== 2) {
-    throw new SaveCodeError('version 2のセーブデータだけを発行できます');
-  }
-  return encodeVersion2(state);
+export function encodeSaveCode(state, catalog) {
+  if (state?.version === 2) return encodeVersion2(state);
+  // version 1時代の呼び出し元を壊さず、既存の16文字形式を発行する。
+  // 製品版本編のUIはversion 2だけを渡すため、通常はSR2形式になる。
+  return encodeLegacySaveCode(state, catalog);
 }
 
 /** version 2または旧16文字形式を検証し、保存可能な進行状態へ戻す。 */
