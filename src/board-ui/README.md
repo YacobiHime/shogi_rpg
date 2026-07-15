@@ -187,7 +187,7 @@ http://localhost:<port>/src/board-ui/index.html?level=3
 
 難易度は`data/difficulty.json`へ定義する。未指定時は`normal`（ふつう）を使用し、
 `node_limit_mult`を敵の`node_limit`へ乗算した実効ノード数で探索する。通常難易度では、
-敵が指すたびに実効ノード数を平均100%・標準偏差15%の正規分布（70%から130%に制限）で
+敵が指すたびに実効ノード数を平均100%・標準偏差30%の正規分布（40%から160%に制限）で
 少し揺らす。また、
 `move_rank_max_bonus`を敵の`move_rank.max`へ加算し、MultiPVで得た実効範囲内の候補から
 ランダムに指し手を選ぶ。現在の稽古相手では、`easy`は第1〜第3候補、`normal`と`hard`は
@@ -210,8 +210,10 @@ http://localhost:<port>/src/board-ui/index.html?formation=standard&enemy=trainin
 
 ## 既知の未実装・要対応事項（このコードをベースに実装を進める際の引き継ぎ事項）
 
-- 駒・盤の本番用画像素材（現状はSVGの簡易図形と文字表示）
 - 次善手デバフなど、探索量削減以外の未対応アイテム／スキル
+
+盤と駒は外部画像を使わず、`board.js`と`board-theme.mjs`が自作SVGとして描画する。
+木目調の盤、五角形の駒、筋・段の座標、成駒の朱文字、持ち駒の枚数表示を含む。
 
 ## ティラノスクリプト連携
 
