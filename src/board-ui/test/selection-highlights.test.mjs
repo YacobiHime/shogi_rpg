@@ -2,7 +2,10 @@ import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import test from 'node:test';
 
-import { getLegalDestinations } from '../selection-highlights.mjs';
+import {
+  getLegalDestinations,
+  toggleHandSelection,
+} from '../selection-highlights.mjs';
 
 const require = createRequire(import.meta.url);
 const { Shogi, Color } = require('shogi.js');
@@ -16,6 +19,21 @@ function position(sfen) {
 function includes(destinations, x, y) {
   return destinations.some((destination) => destination.x === x && destination.y === y);
 }
+
+test('選択中の持ち駒を再選択すると選択を解除する', () => {
+  const selected = { hand: { color: Color.Black, kind: 'FU' } };
+  assert.equal(toggleHandSelection(selected, Color.Black, 'FU'), null);
+});
+
+test('別の持ち駒を選択すると選択対象を切り替える', () => {
+  const selected = { hand: { color: Color.Black, kind: 'FU' } };
+  assert.deepEqual(toggleHandSelection(selected, Color.Black, 'KI'), {
+    hand: { color: Color.Black, kind: 'KI' },
+  });
+  assert.deepEqual(toggleHandSelection({ x: 7, y: 7 }, Color.Black, 'FU'), {
+    hand: { color: Color.Black, kind: 'FU' },
+  });
+});
 
 test('盤上の選択駒について自玉を王手にさらさない移動先だけを返す', () => {
   const shogi = position('4r3k/9/9/9/9/9/9/4G4/4K4 b - 1');

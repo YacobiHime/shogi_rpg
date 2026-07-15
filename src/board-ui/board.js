@@ -20,7 +20,7 @@
 // TypeScriptの型としてのみ存在するため実行時オブジェクトとしてimportできない。
 import shogiLib from './vendor/shogi.esm.js';
 import { isLegalDrop, isLegalMove } from './legal-moves.mjs';
-import { getLegalDestinations } from './selection-highlights.mjs';
+import { getLegalDestinations, toggleHandSelection } from './selection-highlights.mjs';
 const { Shogi, Color, Piece, kindToString } = shogiLib;
 export { Color };
 
@@ -221,7 +221,7 @@ export class BoardView {
       g.addEventListener('click', () => {
         if (this.locked || this._awaitingPromotion) return;
         if (this.shogi.turn !== this.humanColor) return;
-        this.selected = { hand: { color, kind } };
+        this.selected = toggleHandSelection(this.selected, color, kind);
         this.render();
       });
     }
