@@ -19,6 +19,13 @@
 // 駒種(Kind)は実行時にはただの文字列("FU","NY","NK","NG"等)であり、
 // TypeScriptの型としてのみ存在するため実行時オブジェクトとしてimportできない。
 import shogiLib from './vendor/shogi.esm.js';
+import {
+  BOARD_PIECE_POINTS,
+  BOARD_THEME,
+  HAND_PIECE_POINTS,
+  isPromotedKind,
+  summarizeHand,
+} from './board-theme.mjs';
 import { isLegalDrop, isLegalMove } from './legal-moves.mjs';
 import { getLegalDestinations, toggleHandSelection } from './selection-highlights.mjs';
 const { Shogi, Color, Piece, kindToString } = shogiLib;
@@ -59,13 +66,16 @@ export class BoardView {
     this.svg = document.createElementNS(SVG_NS, 'svg');
     this.svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
     this.svg.setAttribute('width', '100%');
-    this.svg.style.background = 'var(--board-bg, #f2c98a)';
+    this.svg.setAttribute('role', 'img');
+    this.svg.setAttribute('aria-label', '将棋盤');
+    this.svg.classList.add('shogi-board');
     this.container.appendChild(this.svg);
   }
 
   /** 現局面をSVGへ再描画する */
   render() {
     while (this.svg.firstChild) this.svg.removeChild(this.svg.firstChild);
+    this._drawDefinitions();
     this._drawGrid();
     this._drawSelectionHighlights();
     this._drawPieces();
@@ -73,19 +83,94 @@ export class BoardView {
   }
 
   _drawGrid() {
+    const boardTop = MARGIN + 40;
+    const boardLength = CELL * BOARD_SIZE;
+    const frame = document.createElementNS(SVG_NS, 'rect');
+    frame.setAttribute('x', MARGIN - 9);
+    frame.setAttribute('y', boardTop - 9);
+    frame.setAttribute('width', boardLength + 18);
+    frame.setAttribute('height', boardLength + 18);
+    frame.setAttribute('rx', '3');
+    frame.setAttribute('fill', `url(#board-wood)`);
+    frame.setAttribute('stroke', BOARD_THEME.boardEdge);
+    frame.setAttribute('stroke-width', '6');
+    frame.setAttribute('filter', 'url(#board-shadow)');
+    this.svg.appendChild(frame);
+
     for (let i = 0; i <= BOARD_SIZE; i++) {
       const line1 = this._line(
-        MARGIN + i * CELL, MARGIN + 40,
-        MARGIN + i * CELL, MARGIN + 40 + CELL * BOARD_SIZE
+        MARGIN + i * CELL, boardTop,
+        MARGIN + i * CELL, boardTop + boardLength,
+        i === 0 || i === BOARD_SIZE ? 2.2 : 1
       );
       const line2 = this._line(
-        MARGIN, MARGIN + 40 + i * CELL,
-        MARGIN + CELL * BOARD_SIZE, MARGIN + 40 + i * CELL
+        MARGIN, boardTop + i * CELL,
+        MARGIN + boardLength, boardTop + i * CELL,
+        i === 0 || i === BOARD_SIZE ? 2.2 : 1
       );
       this.svg.appendChild(line1);
       this.svg.appendChild(line2);
     }
+    this._drawCoordinates();
+    this._drawStarPoints();
     this._drawCellHitboxes();
+  }
+
+  _drawDefinitions() {
+    const defs = document.createElementNS(SVG_NS, 'defs');
+    defs.innerHTML = `
+      <linearGradient id="board-wood" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="${BOARD_THEME.boardLight}"/>
+        <stop offset="0.5" stop-color="#dca45a"/>
+        <stop offset="1" stop-color="${BOARD_THEME.boardDark}"/>
+      </linearGradient>
+      <linearGradient id="piece-wood" x1="0" y1="0" x2="0.85" y2="1">
+        <stop offset="0" stop-color="${BOARD_THEME.pieceLight}"/>
+        <stop offset="1" stop-color="${BOARD_THEME.pieceDark}"/>
+      </linearGradient>
+      <linearGradient id="piece-selected" x1="0" y1="0" x2="0.85" y2="1">
+        <stop offset="0" stop-color="${BOARD_THEME.selectedLight}"/>
+        <stop offset="1" stop-color="${BOARD_THEME.selectedDark}"/>
+      </linearGradient>
+      <filter id="board-shadow" x="-15%" y="-15%" width="130%" height="130%">
+        <feDropShadow dx="0" dy="5" stdDeviation="5" flood-color="#000" flood-opacity="0.42"/>
+      </filter>
+      <filter id="piece-shadow" x="-25%" y="-25%" width="150%" height="150%">
+        <feDropShadow dx="0" dy="2" stdDeviation="1.4" flood-color="#2f1808" flood-opacity="0.48"/>
+      </filter>`;
+    this.svg.appendChild(defs);
+  }
+
+  _drawCoordinates() {
+    const ranks = ['一', '二', '三', '四', '五', '六', '七', '八', '九'];
+    for (let i = 0; i < BOARD_SIZE; i++) {
+      const file = document.createElementNS(SVG_NS, 'text');
+      file.setAttribute('x', MARGIN + i * CELL + CELL / 2);
+      file.setAttribute('y', MARGIN + 27);
+      file.setAttribute('class', 'board-coordinate');
+      file.textContent = String(BOARD_SIZE - i);
+      this.svg.appendChild(file);
+
+      const rank = document.createElementNS(SVG_NS, 'text');
+      rank.setAttribute('x', MARGIN + CELL * BOARD_SIZE + 20);
+      rank.setAttribute('y', MARGIN + 40 + i * CELL + CELL / 2 + 5);
+      rank.setAttribute('class', 'board-coordinate');
+      rank.textContent = ranks[i];
+      this.svg.appendChild(rank);
+    }
+  }
+
+  _drawStarPoints() {
+    for (const col of [3, 6]) {
+      for (const row of [3, 6]) {
+        const point = document.createElementNS(SVG_NS, 'circle');
+        point.setAttribute('cx', MARGIN + col * CELL);
+        point.setAttribute('cy', MARGIN + 40 + row * CELL);
+        point.setAttribute('r', '3.2');
+        point.setAttribute('fill', BOARD_THEME.grid);
+        this.svg.appendChild(point);
+      }
+    }
   }
 
   /**
@@ -109,12 +194,12 @@ export class BoardView {
     }
   }
 
-  _line(x1, y1, x2, y2) {
+  _line(x1, y1, x2, y2, width = 1) {
     const el = document.createElementNS(SVG_NS, 'line');
     el.setAttribute('x1', x1); el.setAttribute('y1', y1);
     el.setAttribute('x2', x2); el.setAttribute('y2', y2);
-    el.setAttribute('stroke', '#333');
-    el.setAttribute('stroke-width', '1');
+    el.setAttribute('stroke', BOARD_THEME.grid);
+    el.setAttribute('stroke-width', String(width));
     return el;
   }
 
@@ -152,17 +237,22 @@ export class BoardView {
     g.style.cursor = 'pointer';
     g.addEventListener('click', () => this._handleCellClick(x, y));
 
-    const rect = document.createElementNS(SVG_NS, 'polygon');
-    rect.setAttribute('points', '0,-24 18,16 -18,16');
-    rect.setAttribute('fill', isSelected ? '#60a5fa' : '#f5deb3');
-    rect.setAttribute('stroke', isSelected ? '#0b3d91' : '#000');
-    rect.setAttribute('stroke-width', isSelected ? '3' : '1');
-    g.appendChild(rect);
+    const shape = document.createElementNS(SVG_NS, 'polygon');
+    shape.setAttribute('points', BOARD_PIECE_POINTS);
+    shape.setAttribute('fill', isSelected ? 'url(#piece-selected)' : 'url(#piece-wood)');
+    shape.setAttribute('stroke', isSelected ? BOARD_THEME.selectedEdge : BOARD_THEME.pieceEdge);
+    shape.setAttribute('stroke-width', isSelected ? '3' : '1.5');
+    shape.setAttribute('filter', 'url(#piece-shadow)');
+    g.appendChild(shape);
 
     const text = document.createElementNS(SVG_NS, 'text');
     text.setAttribute('x', '0'); text.setAttribute('y', '8');
     text.setAttribute('text-anchor', 'middle');
-    text.setAttribute('font-size', '18');
+    text.setAttribute('font-size', '21');
+    text.setAttribute('font-weight', '700');
+    text.setAttribute('font-family', 'Yu Mincho, Hiragino Mincho ProN, serif');
+    text.setAttribute('fill', isPromotedKind(piece.kind)
+      ? BOARD_THEME.promotedText : BOARD_THEME.text);
     text.textContent = kindToString(piece.kind) || '?';
     g.appendChild(text);
 
@@ -180,17 +270,18 @@ export class BoardView {
       label.setAttribute('x', MARGIN);
       label.setAttribute('y', y);
       label.setAttribute('font-size', '14');
+      label.setAttribute('class', 'hand-label');
       label.textContent = `${color === Color.Black ? '先手' : '後手'}持ち駒:${hand.length ? '' : '（なし）'}`;
       this.svg.appendChild(label);
 
-      hand.forEach((piece, index) => {
-        const hx = MARGIN + 92 + index * 32;
-        this._drawHandPiece(color, piece.kind, hx, y - 6);
+      summarizeHand(hand).forEach(({ kind, count }, index) => {
+        const hx = MARGIN + 102 + index * 52;
+        this._drawHandPiece(color, kind, count, hx, y - 6);
       });
     });
   }
 
-  _drawHandPiece(color, kind, cx, cy) {
+  _drawHandPiece(color, kind, count, cx, cy) {
     const isSelected =
       this.selected && this.selected.hand &&
       this.selected.hand.color === color && this.selected.hand.kind === kind;
@@ -200,22 +291,36 @@ export class BoardView {
     g.classList.add('hand-piece');
     if (isSelected) g.classList.add('selected-piece');
     g.dataset.kind = kind;
+    g.dataset.count = String(count);
     g.setAttribute('transform', `translate(${cx},${cy})`);
     g.style.cursor = selectable ? 'pointer' : 'default';
 
     const shape = document.createElementNS(SVG_NS, 'polygon');
-    shape.setAttribute('points', '0,-16 12,10 -12,10');
-    shape.setAttribute('fill', isSelected ? '#60a5fa' : '#f5deb3');
-    shape.setAttribute('stroke', isSelected ? '#0b3d91' : '#000');
-    shape.setAttribute('stroke-width', isSelected ? '3' : '1');
+    shape.setAttribute('points', HAND_PIECE_POINTS);
+    shape.setAttribute('fill', isSelected ? 'url(#piece-selected)' : 'url(#piece-wood)');
+    shape.setAttribute('stroke', isSelected ? BOARD_THEME.selectedEdge : BOARD_THEME.pieceEdge);
+    shape.setAttribute('stroke-width', isSelected ? '3' : '1.2');
+    shape.setAttribute('filter', 'url(#piece-shadow)');
     g.appendChild(shape);
 
     const text = document.createElementNS(SVG_NS, 'text');
     text.setAttribute('x', '0'); text.setAttribute('y', '5');
     text.setAttribute('text-anchor', 'middle');
     text.setAttribute('font-size', '13');
+    text.setAttribute('font-weight', '700');
+    text.setAttribute('font-family', 'Yu Mincho, Hiragino Mincho ProN, serif');
+    text.setAttribute('fill', BOARD_THEME.text);
     text.textContent = kindToString(kind) || '?';
     g.appendChild(text);
+
+    if (count > 1) {
+      const countText = document.createElementNS(SVG_NS, 'text');
+      countText.setAttribute('x', '18');
+      countText.setAttribute('y', '10');
+      countText.setAttribute('class', 'hand-piece-count');
+      countText.textContent = `×${count}`;
+      g.appendChild(countText);
+    }
 
     if (selectable) {
       g.addEventListener('click', () => {

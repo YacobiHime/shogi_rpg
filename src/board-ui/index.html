@@ -2,18 +2,68 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <base href="/src/board-ui/">
 <title>将棋RPG - 対局UI</title>
+<link rel="icon" href="data:,">
 <style>
-  body { font-family: sans-serif; background: #222; color: #eee; margin: 0; }
-  h1 { text-align: center; margin: 20px 12px 12px; }
-  #status { font-size: 18px; margin: 12px; }
-  #board-container { max-width: 560px; margin: 0 auto; }
-  #game-actions { display: flex; flex-wrap: wrap; gap: 10px; margin: 0 12px 12px; }
-  #game-actions button { margin: 0; padding: 7px 12px; }
+  :root {
+    color-scheme: dark;
+    --ink: #f8ecd6;
+    --muted: #c8b89f;
+    --panel: rgba(35, 25, 19, 0.9);
+    --panel-edge: #77502f;
+    --gold: #d7a64a;
+    --gold-light: #f0cc7a;
+  }
+  * { box-sizing: border-box; }
+  body {
+    min-height: 100vh; margin: 0; color: var(--ink);
+    font-family: "Yu Gothic", "Hiragino Kaku Gothic ProN", sans-serif;
+    background:
+      radial-gradient(circle at 50% -15%, rgba(171, 113, 51, 0.34), transparent 42rem),
+      repeating-linear-gradient(135deg, rgba(255,255,255,0.015) 0 1px, transparent 1px 8px),
+      #17120f;
+  }
+  h1 {
+    margin: 0; padding: 18px 12px 10px; text-align: center;
+    color: var(--gold-light); font: 700 clamp(22px, 4vw, 30px) "Yu Mincho", serif;
+    letter-spacing: 0.12em; text-shadow: 0 2px 8px #000;
+  }
+  #status {
+    max-width: 720px; min-height: 1.6em; margin: 0 auto 12px; padding: 0 16px;
+    color: var(--muted); font-size: 16px; text-align: center;
+  }
+  #board-container {
+    width: min(100%, 600px); margin: 0 auto; padding: 0 8px 18px;
+    filter: drop-shadow(0 16px 24px rgba(0,0,0,0.35));
+  }
+  .shogi-board { display: block; overflow: visible; }
+  .board-coordinate {
+    fill: #ead7b9; font: 700 14px "Yu Mincho", serif; text-anchor: middle;
+  }
+  .hand-piece-count {
+    fill: #fff4dc; font: 700 12px "Yu Gothic", sans-serif;
+    paint-order: stroke; stroke: #24140b; stroke-width: 3px;
+  }
+  .hand-label { fill: #ead7b9; font-weight: 700; }
+  #game-actions {
+    display: flex; flex-wrap: wrap; justify-content: center; gap: 9px;
+    max-width: 720px; margin: 0 auto 10px; padding: 0 12px;
+  }
+  button {
+    border: 1px solid #8b6844; border-radius: 6px; color: #fff7e8;
+    background: linear-gradient(#5a412e, #35271f); font: inherit; cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.35);
+  }
+  button:hover:not(:disabled) { border-color: var(--gold); filter: brightness(1.12); }
+  button:focus-visible { outline: 3px solid #60a5fa; outline-offset: 2px; }
+  button:disabled { cursor: not-allowed; opacity: 0.45; }
+  #game-actions button { min-height: 40px; margin: 0; padding: 8px 13px; }
   #hint-message { min-height: 1.5em; margin: 0 12px 12px; color: #facc15; font-weight: bold; }
   #connection-status {
-    margin: 12px; padding: 8px 12px; background: #6b3f00; border-radius: 4px;
+    max-width: 720px; margin: 12px auto; padding: 8px 12px;
+    background: #6b3f00; border-radius: 4px;
   }
   #result-overlay {
     position: fixed; inset: 0; background: rgba(0, 0, 0, 0.75);
@@ -38,7 +88,8 @@
   #loading-retry { margin-top: 16px; padding: 8px 20px; }
   #setup-screen {
     max-width: 520px; margin: 24px auto; padding: 24px;
-    background: #333; border: 2px solid #666; border-radius: 12px;
+    background: var(--panel); border: 2px solid var(--panel-edge); border-radius: 12px;
+    box-shadow: 0 16px 40px rgba(0,0,0,0.4);
   }
   #setup-screen h2 { margin-top: 0; text-align: center; }
   #setup-form { display: grid; gap: 18px; }
@@ -50,10 +101,10 @@
   }
   #setup-start {
     padding: 13px 20px; border: 0; border-radius: 7px;
-    background: #2563eb; color: #fff; font-size: 18px; font-weight: bold;
+    background: linear-gradient(#b47a2a, #754514); color: #fff; font-size: 18px; font-weight: bold;
     cursor: pointer;
   }
-  #setup-start:hover { background: #1d4ed8; }
+  #setup-start:hover { background: linear-gradient(#c98b35, #87501a); }
   #setup-note { margin: 0; color: #ccc; font-size: 14px; }
   #save-panel {
     margin-top: 22px; padding-top: 18px; border-top: 1px solid #666;
@@ -67,6 +118,14 @@
   #save-panel button { padding: 8px 12px; margin: 7px 0 12px; }
   #save-status, #save-code-message { min-height: 1.4em; color: #ccc; }
   #save-code-message { color: #facc15; }
+  @media (max-width: 520px) {
+    h1 { padding-top: 12px; }
+    #status { font-size: 14px; }
+    #game-actions { gap: 7px; }
+    #game-actions button { flex: 1 1 calc(50% - 7px); min-width: 132px; }
+    #setup-screen { margin: 12px; padding: 18px; }
+    #board-container { padding-inline: 2px; }
+  }
 </style>
 </head>
 <body>
@@ -133,6 +192,6 @@
     <button id="loading-retry" hidden>再試行</button>
   </div>
 
-  <script type="module" src="./main.js?v=tyrano-bridge-1"></script>
+  <script type="module" src="./main.js?v=board-art-1"></script>
 </body>
 </html>
