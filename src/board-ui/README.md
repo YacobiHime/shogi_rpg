@@ -115,6 +115,8 @@ node server.js
 ### 4. Firebase Hosting用ビルド・本番配信
 
 本番配信先は、COOP/COEP応答ヘッダーと64MB級のNNUEファイルを扱えるFirebase Hostingを使う。
+FirebaseプロジェクトIDは`shogi-64125`で、`.firebaserc`の既定プロジェクトとして管理する。
+プロジェクトIDと公開URLは識別子であり、APIキーや認証情報のような秘密情報ではない。
 プロジェクト直下で次を実行すると、実行に必要なファイルだけが`dist/`へ出力される。
 
 ```powershell
@@ -122,12 +124,14 @@ node tools/build-hosting.mjs
 ```
 
 `data/enemies.json`が参照する`nnue_file`が`assets/nnue/`にない場合、ビルドはエラーで停止する。
-Firebaseプロジェクトを作成してCLIへログインした後、次のコマンドでローカル確認と配信を行う。
+Firebase CLIへログインした後、次のコマンドでローカル確認と配信を行う。
 
 ```powershell
 npx firebase-tools emulators:start --only hosting
-npx firebase-tools deploy --only hosting --project <FirebaseプロジェクトID>
+npx firebase-tools deploy --only hosting
 ```
+
+本番URL: <https://shogi-64125.web.app/>
 
 公開後はレスポンスに`Cross-Origin-Opener-Policy: same-origin`と
 `Cross-Origin-Embedder-Policy: require-corp`が付き、ブラウザで`crossOriginIsolated === true`に

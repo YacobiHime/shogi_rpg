@@ -39,6 +39,9 @@
 将棋AIの推論・ルール処理・セーブデータ管理はすべてクライアントサイドで完結させる。
 HalfKP版WASMのPThread実行に必要なCOOP/COEPヘッダーは`firebase.json`で設定する。
 GitHub Pagesはこの応答ヘッダーをリポジトリ側で設定できないため、本番配信先には使用しない。
+FirebaseプロジェクトIDは`shogi-64125`（`.firebaserc`で管理）、本番URLは
+<https://shogi-64125.web.app/> とする。プロジェクトID自体は秘密情報ではないが、
+認証トークンやサービスアカウント鍵はリポジトリへ保存しない。
 
 ## 対応環境
 
