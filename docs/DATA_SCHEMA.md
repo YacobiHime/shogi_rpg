@@ -104,8 +104,8 @@ nav_order: 5
   `unlock_level`と解禁テーブルの`level`を一致させる
 - 未定義ID、マスタの登録漏れ、重複ID、レベル不一致は対局条件の読込時にエラーとする
 - `undo_max` / `hint_max`は0以上の整数で、そのレベルまでの値を累積して基本使用回数へ加算する
-- M3結線前のスタンドアロンUIはURLクエリ`?level=<1〜255>`をプレイヤーレベルとして使い、
-  省略時はレベル1とする。M3結線後はセーブデータの`player_level`を優先する
+- localStorageの`player_level`を正とする。保存データがない初回だけURLクエリ
+  `?level=<1〜255>`を初期値として取り込み、省略時はレベル1とする
 
 ## 5. 難易度係数テーブル（`data/difficulty.json`）
 
@@ -152,6 +152,7 @@ nav_order: 5
 
 ```jsonc
 {
+  "version": 1,
   "chapter": 5,
   "player_level": 12,
   "unlocked_formations": ["yagura", "mino_gakoi", "anaguma"],
@@ -163,7 +164,15 @@ nav_order: 5
 }
 ```
 
-## 8. 復活の呪文（エンコード対象のビット構造案）
+- `version`は現在`1`。省略された旧形式は読み込み時に現行形式へ移行し、未来版は拒否する
+- `chapter`は1〜63、`player_level`は1〜255、消費アイテム所持数は0〜15の整数
+- ID配列は重複を許さず、現在の戦形・アイテム・敵マスタに存在するIDだけを保存する
+- レベル解禁済みIDが旧セーブで欠けている場合は`level_unlocks.json`から補完する
+- 難易度の変更、ヒント・待ったの消費、復活の呪文からの復元時に自動保存する
+- JSON欠損は安全に補完し、解析不能・未知ID・範囲外値などの破損時は警告付きで初期状態へ復旧する
+- `updated_at`はISO 8601日時。復活の呪文には含めず、保存時に更新する
+
+## 8. 復活の呪文（エンコード対象のビット構造）
 
 | フィールド | ビット幅 | 備考 |
 |---|---|---|
@@ -174,10 +183,14 @@ nav_order: 5
 | item_counts.hint | 4 bit | 最大15個まで |
 | item_counts.undo | 4 bit | 最大15個まで |
 | difficulty | 2 bit | 0=やさしい, 1=ふつう, 2=むずかしい |
-| checksum | 8 bit | 上記全体に対する簡易チェックサム |
+| checksum | 8 bit | 上記9 byteに対するCRC-8（多項式`0x07`） |
 
-- 合計 80 bit 程度。Base32相当のエンコードで英数字16文字前後の文字列になる想定
-- 実装時は `unlocked_formations` / `defeated_bosses` のビット数を実際のマスタデータ件数に合わせて調整する
+- 合計80 bitを`23456789ABCDEFGHJKLMNPQRSTUVWXYZ`でBase32相当に変換し、16文字にする
+- 表示時は4文字ごとに`-`を入れる。入力時は大文字小文字、空白、`-`を無視する
+- `unlocked_formations`は`formations.json`の配列順で最大16件、`defeated_bosses`は
+  専用ボスマスタ導入までは`enemies.json`の配列順で最大32件を割り当てる。既存要素の順番は変更しない
+- 解禁済みアイテムは`player_level`と解禁表から復元し、個数はヒント札・待った札だけを格納する
+- `version`と`updated_at`は呪文に含めず、復元時に現行バージョンと現在日時を設定する
 
 ## 9. USI通信メッセージ（対局UI ⇔ 将棋AIエンジン）
 

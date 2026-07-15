@@ -87,6 +87,14 @@ test('URLで直接指定された未解禁の戦形とスキルを拒否する',
   });
   assert.equal(resolved.formation.formation_id, 'advanced');
   assert.equal(resolved.equippedItem.item_id, 'advanced_skill');
+
+  const restoredUnlock = resolveMatchSelection(options, {
+    ...selection,
+    unlockedFormationIds: new Set(['standard', 'advanced']),
+    unlockedItemIds: new Set(['advanced_skill']),
+    itemId: 'advanced_skill',
+  });
+  assert.equal(restoredUnlock.formation.formation_id, 'advanced');
 });
 
 test('選択内容を既存形式の対局URLクエリへ変換する', () => {
@@ -103,12 +111,6 @@ test('選択内容を既存形式の対局URLクエリへ変換する', () => {
     itemId: 'node_limit_half',
   }), '?enemy=training_partner&formation=standard&difficulty=normal&item=node_limit_half');
 
-  assert.equal(buildMatchSearch({
-    enemyId: 'training_partner',
-    formationId: 'standard',
-    difficultyId: 'normal',
-    playerLevel: 3,
-  }), '?enemy=training_partner&formation=standard&difficulty=normal&level=3');
 });
 
 test('準備画面のスキル選択を対局の探索ノード倍率へ接続する', async () => {

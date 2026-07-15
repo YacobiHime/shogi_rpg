@@ -89,6 +89,7 @@ function build() {
 
   copyTree('data', (file) => extname(file) === '.json');
   copyTree(join('src', 'engine'), (file) => extname(file) === '.js');
+  copyTree(join('src', 'save'), (file) => extname(file) === '.mjs');
   copyTree(join('assets', 'nnue'), (file) => extname(file) === '.bin');
   copyBoardUi();
   validateNnueAssets();

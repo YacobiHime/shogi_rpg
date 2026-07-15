@@ -3,7 +3,7 @@
  *
  * 対局UIのエントリポイント。
  * 盤面(BoardView)とエンジン(ShogiEngine)を繋ぎ、人間(先手) vs エンジン(後手)の
- * 対局を成立させるゲームループ。M2では戦形・敵マスタを対局条件へ反映する。
+ * 対局を成立させるゲームループ。RPGマスタとM3セーブ状態を対局条件へ反映する。
  */
 
 import { ShogiEngine } from '../engine/engine.js';
@@ -15,16 +15,8 @@ import {
 } from './difficulty.mjs';
 import { evaluateEnteringKingDeclaration } from './entering-king.mjs';
 import { loadEngineFactories } from './engine-loader.mjs';
-import {
-  getNodeDebuffMultiplier,
-  getNodeDebuffSkills,
-  getStandaloneAssistLimits,
-} from './items.mjs';
-import {
-  applyAssistLimitUpgrades,
-  getUnlockState,
-  parsePlayerLevel,
-} from './level-unlocks.mjs';
+import { getNodeDebuffMultiplier } from './items.mjs';
+import { applyAssistLimitUpgrades } from './level-unlocks.mjs';
 import {
   buildMatchSearch,
   getAvailableFormations,
@@ -35,6 +27,9 @@ import { calculateEffectiveMoveRank, selectMoveByRank } from './move-selection.m
 import { formatHintMove, getHintMove, TurnHistory } from './match-assists.mjs';
 import { resolveNnuePath } from './nnue.mjs';
 import { RepetitionTracker } from './repetition.mjs';
+import { decodeSaveCode, encodeSaveCode, formatSaveCode } from '../save/save-code.mjs';
+import { normalizeSaveState } from '../save/save-state.mjs';
+import { loadSaveState, saveSaveState } from '../save/save-storage.mjs';
 
 const statusEl = document.getElementById('status');
 const resignButton = document.getElementById('resign-button');
@@ -59,6 +54,12 @@ const setupFormation = document.getElementById('setup-formation');
 const setupDifficulty = document.getElementById('setup-difficulty');
 const setupItem = document.getElementById('setup-item');
 const setupNote = document.getElementById('setup-note');
+const saveStatusEl = document.getElementById('save-status');
+const saveCodeOutput = document.getElementById('save-code-output');
+const saveCodeIssueButton = document.getElementById('save-code-issue');
+const saveCodeInput = document.getElementById('save-code-input');
+const saveCodeRestoreButton = document.getElementById('save-code-restore');
+const saveCodeMessage = document.getElementById('save-code-message');
 const gameScreen = document.getElementById('game-screen');
 let wakeLock = null;
 
@@ -75,27 +76,80 @@ function showOptions(select, options, valueKey, nameKey) {
   }));
 }
 
+function createSaveContext(options) {
+  return {
+    formations: options.formations,
+    items: options.items,
+    levelUnlocks: options.levelUnlocks,
+    // 専用ボスマスタ導入までは敵マスタの順序を呪文の固定ビット位置として扱う。
+    bossIds: options.enemies.map((enemy) => enemy.enemy_id),
+    difficultyIds: options.difficulties.map((difficulty) => difficulty.difficulty_id),
+  };
+}
+
+function createSaveCatalog(context) {
+  return {
+    formationIds: context.formations.map((formation) => formation.formation_id),
+    bossIds: context.bossIds,
+  };
+}
+
+function loadPlayerSave(options, params) {
+  const context = createSaveContext(options);
+  const loaded = loadSaveState(window.localStorage, context, {
+    // 旧ブックマークとの互換用。保存済みデータがある場合はこの値を使わない。
+    playerLevel: params.get('level') || undefined,
+  });
+  let state = loaded.state;
+  let warning = loaded.warning;
+  try {
+    state = saveSaveState(window.localStorage, state);
+  } catch (error) {
+    console.warn(error.message, error);
+    warning = [warning, error.message].filter(Boolean).join(' ');
+  }
+  return { state, context, warning };
+}
+
+function persistPlayerSave(state, messageElement = null) {
+  try {
+    const saved = saveSaveState(window.localStorage, state);
+    if (messageElement) messageElement.textContent = '自動保存しました。';
+    return saved;
+  } catch (error) {
+    console.warn(error.message, error);
+    if (messageElement) messageElement.textContent = error.message;
+    return state;
+  }
+}
+
 async function showMatchSetup(params) {
   setStatus('対局条件を読み込み中...');
   setLoading('対局条件を読み込み中...');
   const options = await loadMatchSetupOptions();
-  const playerLevel = parsePlayerLevel(params.get('level'));
-  const unlockState = getUnlockState(options.levelUnlocks, playerLevel);
+  const loadedSave = loadPlayerSave(options, params);
+  let playerSave = loadedSave.state;
+  const { context } = loadedSave;
+  const playerLevel = playerSave.player_level;
+  const unlockedFormationIds = new Set(playerSave.unlocked_formations);
+  const unlockedItemIds = new Set(playerSave.unlocked_items);
 
   showOptions(setupEnemy, options.enemies, 'enemy_id', 'name');
   showOptions(setupDifficulty, options.difficulties, 'difficulty_id', 'name');
   showOptions(setupItem, [
     { item_id: '', name: '装備しない' },
-    ...getNodeDebuffSkills(options.items, playerLevel)
-      .filter((item) => unlockState.itemIds.has(item.item_id)),
+    ...options.items.filter((item) => item.type === 'enemy_debuff_nodes'
+      && !item.consumable && unlockedItemIds.has(item.item_id)),
   ], 'item_id', 'name');
   setupNote.textContent = `プレイヤーレベル${playerLevel}／あなたが先手で対局します。`;
+  saveStatusEl.textContent = loadedSave.warning
+    || `第${playerSave.chapter}章・レベル${playerLevel}の進行を自動保存しています。`;
 
   const requestedEnemy = params.get('enemy');
   if (options.enemies.some((enemy) => enemy.enemy_id === requestedEnemy)) {
     setupEnemy.value = requestedEnemy;
   }
-  const requestedDifficulty = params.get('difficulty') || 'normal';
+  const requestedDifficulty = params.get('difficulty') || playerSave.difficulty;
   if (options.difficulties.some((difficulty) => difficulty.difficulty_id === requestedDifficulty)) {
     setupDifficulty.value = requestedDifficulty;
   }
@@ -107,7 +161,7 @@ async function showMatchSetup(params) {
   function updateFormationOptions() {
     const enemy = options.enemies.find((item) => item.enemy_id === setupEnemy.value);
     const available = getAvailableFormations(
-      enemy, options.formations, unlockState.formationIds
+      enemy, options.formations, unlockedFormationIds
     );
     const previous = setupFormation.value;
     showOptions(setupFormation, available, 'formation_id', 'name');
@@ -118,6 +172,11 @@ async function showMatchSetup(params) {
   }
 
   setupEnemy.addEventListener('change', updateFormationOptions);
+  setupDifficulty.addEventListener('change', () => {
+    playerSave = persistPlayerSave(
+      { ...playerSave, difficulty: setupDifficulty.value }, saveStatusEl
+    );
+  });
   updateFormationOptions();
   setupForm.addEventListener('submit', (event) => {
     event.preventDefault();
@@ -126,8 +185,24 @@ async function showMatchSetup(params) {
       formationId: setupFormation.value,
       difficultyId: setupDifficulty.value,
       itemId: setupItem.value,
-      playerLevel,
     }));
+  });
+
+  const catalog = createSaveCatalog(context);
+  saveCodeIssueButton.addEventListener('click', () => {
+    saveCodeOutput.value = formatSaveCode(encodeSaveCode(playerSave, catalog));
+    saveCodeMessage.textContent = '復活の呪文を発行しました。大切に保管してください。';
+  });
+  saveCodeRestoreButton.addEventListener('click', () => {
+    try {
+      const decoded = decodeSaveCode(saveCodeInput.value, catalog);
+      const restored = normalizeSaveState(decoded, context);
+      playerSave = saveSaveState(window.localStorage, restored);
+      saveCodeMessage.textContent = '復活の呪文から復元しました。画面を更新します。';
+      window.location.assign(window.location.pathname);
+    } catch (error) {
+      saveCodeMessage.textContent = error.message;
+    }
   });
 
   gameScreen.hidden = true;
@@ -203,20 +278,38 @@ async function main() {
   gameScreen.hidden = false;
   const formationId = params.get('formation') || 'standard';
   const enemyId = params.get('enemy') || 'training_partner';
-  const difficultyId = params.get('difficulty') || 'normal';
+  const requestedDifficultyId = params.get('difficulty');
   const itemId = params.get('item');
-  const playerLevel = parsePlayerLevel(params.get('level'));
   setStatus('対局データを読み込み中...');
   setLoading('対局データを読み込み中...');
   const options = await loadMatchSetupOptions();
+  const loadedSave = loadPlayerSave(options, params);
+  let playerSave = loadedSave.state;
+  const playerLevel = playerSave.player_level;
+  const difficultyId = requestedDifficultyId || playerSave.difficulty;
+  if (!options.difficulties.some((item) => item.difficulty_id === difficultyId)) {
+    throw new Error(`指定された難易度が見つかりません: ${difficultyId}`);
+  }
+  if (playerSave.difficulty !== difficultyId) {
+    playerSave = persistPlayerSave({ ...playerSave, difficulty: difficultyId });
+  }
   const { formation, enemy, difficulty, equippedItem, unlockState } =
     resolveMatchSelection(options, {
-      formationId, enemyId, difficultyId, itemId, playerLevel,
+      formationId,
+      enemyId,
+      difficultyId,
+      itemId,
+      playerLevel,
+      unlockedFormationIds: new Set(playerSave.unlocked_formations),
+      unlockedItemIds: new Set(playerSave.unlocked_items),
     });
-  const { items } = options;
   const nodeDebuffMultiplier = getNodeDebuffMultiplier(equippedItem);
   const assistLimits = applyAssistLimitUpgrades(
-    getStandaloneAssistLimits(items, playerLevel), unlockState
+    {
+      hints: playerSave.item_counts.hint_ticket || 0,
+      undo: playerSave.item_counts.undo_ticket || 0,
+    },
+    unlockState
   );
   const hintNodeLimit = calculateEffectiveNodeLimit(
     enemy.node_limit,
@@ -347,6 +440,15 @@ async function main() {
       });
       const hintMove = getHintMove(searchResult);
       hintsUsed += 1;
+      if ((playerSave.item_counts.hint_ticket || 0) > 0) {
+        playerSave = persistPlayerSave({
+          ...playerSave,
+          item_counts: {
+            ...playerSave.item_counts,
+            hint_ticket: playerSave.item_counts.hint_ticket - 1,
+          },
+        });
+      }
       hintMessageEl.textContent = `ヒント: ${formatHintMove(hintMove)}`;
     } catch (error) {
       console.error('ヒントの取得に失敗しました', error);
@@ -364,6 +466,15 @@ async function main() {
     const snapshot = turnHistory.undo();
     if (!snapshot) return;
     undoUsed += 1;
+    if ((playerSave.item_counts.undo_ticket || 0) > 0) {
+      playerSave = persistPlayerSave({
+        ...playerSave,
+        item_counts: {
+          ...playerSave.item_counts,
+          undo_ticket: playerSave.item_counts.undo_ticket - 1,
+        },
+      });
+    }
     moveHistory.length = snapshot.moveHistoryLength;
     repetitionTracker.truncate(snapshot.repetitionLength);
     board.restoreSfen(snapshot.sfen);

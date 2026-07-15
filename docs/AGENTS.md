@@ -40,7 +40,7 @@ nav_order: 11
 | `src/board-ui/` | 盤面、対局進行、準備画面、RPG効果、テスト |
 | `src/engine/` | YaneuraOu.wasmの初期化とUSI通信 |
 | `data/` | 敵、戦形、難易度、アイテム、解禁条件のマスタ |
-| `src/save/` | M3のセーブ・復活の呪文（未着手） |
+| `src/save/` | セーブ状態、localStorage、復活の呪文 |
 | `src/novel/`, `scenario/`, `tyrano/` | M4のノベル連携領域 |
 | `assets/` | 配布素材とNNUE。追加時は権利を確認 |
 | `tools/` | 開発・検証・Hostingビルド。配布ランタイムではない |

@@ -55,6 +55,18 @@
   }
   #setup-start:hover { background: #1d4ed8; }
   #setup-note { margin: 0; color: #ccc; font-size: 14px; }
+  #save-panel {
+    margin-top: 22px; padding-top: 18px; border-top: 1px solid #666;
+  }
+  #save-panel h3 { margin: 0 0 10px; }
+  #save-panel textarea {
+    box-sizing: border-box; width: 100%; min-height: 48px; padding: 9px;
+    border: 2px solid #888; border-radius: 6px; background: #181818; color: #fff;
+    font: 16px monospace; resize: vertical;
+  }
+  #save-panel button { padding: 8px 12px; margin: 7px 0 12px; }
+  #save-status, #save-code-message { min-height: 1.4em; color: #ccc; }
+  #save-code-message { color: #facc15; }
 </style>
 </head>
 <body>
@@ -85,6 +97,17 @@
       <p id="setup-note">あなたが先手で対局します。</p>
       <button id="setup-start" type="submit">対局開始</button>
     </form>
+    <section id="save-panel" aria-labelledby="save-heading">
+      <h3 id="save-heading">セーブ・復活の呪文</h3>
+      <p id="save-status" role="status"></p>
+      <label for="save-code-output">発行した復活の呪文</label>
+      <textarea id="save-code-output" readonly></textarea>
+      <button id="save-code-issue" type="button">復活の呪文を発行</button>
+      <label for="save-code-input">復元する復活の呪文</label>
+      <textarea id="save-code-input" autocomplete="off" spellcheck="false"></textarea>
+      <button id="save-code-restore" type="button">復活の呪文から復元</button>
+      <p id="save-code-message" role="status" aria-live="polite"></p>
+    </section>
   </section>
   <main id="game-screen">
     <div id="game-actions">
@@ -110,6 +133,6 @@
     <button id="loading-retry" hidden>再試行</button>
   </div>
 
-  <script type="module" src="./main.js?v=level-unlocks-1"></script>
+  <script type="module" src="./main.js?v=save-system-1"></script>
 </body>
 </html>

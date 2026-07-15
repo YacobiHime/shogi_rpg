@@ -174,8 +174,8 @@ http://localhost:<port>/src/board-ui/index.html?formation=standard&enemy=trainin
 http://localhost:<port>/src/board-ui/index.html?formation=standard&enemy=training_partner&difficulty=easy
 ```
 
-M3結線前のプレイヤーレベルを指定する場合は`level`を付ける（省略時は1）。準備画面には
-そのレベルで解禁済みの戦形・スキルだけを表示し、対局URLにも同じレベルを引き継ぐ。
+保存データがない初回だけプレイヤーレベルを指定する場合は`level`を付ける（省略時は1）。準備画面には
+そのレベルで解禁済みの戦形・スキルだけを表示し、以後はlocalStorageのセーブを参照する。
 未解禁のIDをURLへ直接指定しても対局は開始しない。
 
 ```
@@ -202,14 +202,13 @@ http://localhost:<port>/src/board-ui/index.html?formation=standard&enemy=trainin
 
 対局中の「ヒント」は現局面の最善手をAIで探索して表示する。「待った」は
 直前のプレイヤーの指し手と敵の応手を取り消し、指し直し可能な局面へ戻す。
-現在のスタンドアロン対局では`data/items.json`の`hint_ticket`と2回、`undo_ticket`と3回を
-初期上限として使う。将来のM3結線後はセーブデータ・対局開始構成の回数を優先する。
+初回セーブでは`data/items.json`の`hint_ticket`を2個、`undo_ticket`を3個所持し、
+対局ではセーブデータの所持数を使用上限として使用時に自動保存する。
 
 ## 既知の未実装・要対応事項（このコードをベースに実装を進める際の引き継ぎ事項）
 
 - 駒・盤の本番用画像素材（現状はSVGの簡易図形と文字表示）
 - 次善手デバフなど、探索量削減以外の未対応アイテム／スキル
-- プレイヤーレベルと解禁テーブルに基づく準備画面の選択肢制御
 
 `applyUsiMove()`のパーサー実装、盤面API呼び出し箇所（`shogi.get()`等）、空きマスへの
 クリック判定（`_drawCellHitboxes()`）、王手放置となる着手と打ち歩詰めの拒否、

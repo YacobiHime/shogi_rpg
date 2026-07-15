@@ -66,13 +66,15 @@ export function getAvailableFormations(enemy, formations, unlockedIds = null) {
 /** URL指定を含む対局条件を検証し、解禁済みのマスタを返す。 */
 export function resolveMatchSelection(options, selection) {
   const unlockState = getUnlockState(options.levelUnlocks, selection.playerLevel);
+  const unlockedFormationIds = selection.unlockedFormationIds || unlockState.formationIds;
+  const unlockedItemIds = selection.unlockedItemIds || unlockState.itemIds;
   const enemy = options.enemies.find((item) => item.enemy_id === selection.enemyId);
   if (!enemy) throw new Error(`指定された敵が見つかりません: ${selection.enemyId}`);
   const formation = options.formations.find(
     (item) => item.formation_id === selection.formationId
   );
   if (!formation) throw new Error(`指定された戦形が見つかりません: ${selection.formationId}`);
-  if (!unlockState.formationIds.has(formation.formation_id)) {
+  if (!unlockedFormationIds.has(formation.formation_id)) {
     throw new Error(`レベル${selection.playerLevel}では戦形「${formation.name}」は未解禁です`);
   }
   if (!enemy.allowed_openings.includes(formation.formation_id)) {
@@ -87,7 +89,7 @@ export function resolveMatchSelection(options, selection) {
   if (selection.itemId) {
     equippedItem = options.items.find((item) => item.item_id === selection.itemId);
     if (!equippedItem) throw new Error(`指定されたアイテムが見つかりません: ${selection.itemId}`);
-    if (!unlockState.itemIds.has(equippedItem.item_id)) {
+    if (!unlockedItemIds.has(equippedItem.item_id)) {
       throw new Error(`レベル${selection.playerLevel}では「${equippedItem.name}」は未解禁です`);
     }
     if (equippedItem.type !== 'enemy_debuff_nodes' || equippedItem.consumable) {
@@ -99,15 +101,14 @@ export function resolveMatchSelection(options, selection) {
 
 /**
  * 既存のURLクエリ形式に合わせて対局開始URLを作る。
- * @param {{ enemyId: string, formationId: string, difficultyId: string, itemId?: string, playerLevel?: number }} selection
+ * @param {{ enemyId: string, formationId: string, difficultyId: string, itemId?: string }} selection
  */
-export function buildMatchSearch({ enemyId, formationId, difficultyId, itemId, playerLevel }) {
+export function buildMatchSearch({ enemyId, formationId, difficultyId, itemId }) {
   const params = new URLSearchParams({
     enemy: enemyId,
     formation: formationId,
     difficulty: difficultyId,
   });
   if (itemId) params.set('item', itemId);
-  if (playerLevel !== undefined) params.set('level', String(playerLevel));
   return `?${params.toString()}`;
 }
