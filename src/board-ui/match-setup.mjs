@@ -92,8 +92,8 @@ export function resolveMatchSelection(options, selection) {
     if (!unlockedItemIds.has(equippedItem.item_id)) {
       throw new Error(`レベル${selection.playerLevel}では「${equippedItem.name}」は未解禁です`);
     }
-    if (equippedItem.type !== 'enemy_debuff_nodes' || equippedItem.consumable) {
-      throw new Error(`この対局では恒久探索量デバフスキルだけを装備できます: ${selection.itemId}`);
+    if (!['enemy_debuff_nodes', 'enemy_debuff_rank'].includes(equippedItem.type)) {
+      throw new Error(`この対局では敵弱体化棋具だけを装備できます: ${selection.itemId}`);
     }
   }
   return { formation, enemy, difficulty, equippedItem, unlockState };
