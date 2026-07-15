@@ -31,6 +31,8 @@
 - [コントリビューションガイド](./CONTRIBUTING.md)
 - [素材・クレジット台帳](./ASSETS_CREDITS.md)
 - [行動規範](./CODE_OF_CONDUCT.md)
+- [AIエージェント向け作業ガイド](./AGENTS.md)
+- [将棋RPG マスタデータ追加スキル](./SKILL.md)
 - [ライセンス](./LICENSE)
 
 ## ホスティング方針

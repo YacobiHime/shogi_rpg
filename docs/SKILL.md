@@ -1,6 +1,9 @@
 ---
 name: shogi-data-entry
 description: 敵（enemies.json）・戦形（formations.json）・アイテム（items.json）・レベル解禁テーブル（level_unlocks.json）などのマスタデータを新規追加/編集する際に使用する。「敵を追加して」「新しい戦形を登録して」「アイテムのデータを作って」等の依頼で発動する。
+title: 将棋RPG マスタデータ追加スキル
+layout: default
+nav_order: 12
 ---
 
 # 将棋RPG マスタデータ追加スキル

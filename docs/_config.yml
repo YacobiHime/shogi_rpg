@@ -14,14 +14,14 @@ plugins:
 # 誤って全ファイルがビルド対象から除外されないための明示的include
 include:
   - README.md
+  - AGENTS.md
+  - SKILL.md
 
-# Wiki公開対象外のファイル（GitHub運用テンプレート／LLMエージェント用設定）
+# Wiki公開対象外のファイル（GitHub運用テンプレート）
 exclude:
   - bug_report.md
   - feature_request.md
   - PULL_REQUEST_TEMPLATE.md
-  - AGENTS.md
-  - SKILL.md
 
 # just-the-docs 用オプション
 search_enabled: true

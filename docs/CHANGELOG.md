@@ -67,6 +67,8 @@ nav_order: 7
   確認するテストを追加
 
 ### Fixed
+- GitHub Pagesの公開対象から`AGENTS.md`と`SKILL.md`が除外され、
+  サイドバーとドキュメント一覧に表示されなかった問題を修正
 - 展示端末に旧版の盤面JavaScriptが最大1時間残り、選択中の駒と移動先の強調色が表示されない
   場合がある問題を修正。HTML・JavaScript・JSONを再検証するキャッシュ設定へ変更した
 - Firebase HostingのルートURLでは`./main.js`が存在しない`/main.js`へ解決され、

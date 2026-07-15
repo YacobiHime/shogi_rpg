@@ -1,3 +1,9 @@
+---
+title: AIエージェント向け作業ガイド
+layout: default
+nav_order: 11
+---
+
 # AGENTS.md
 
 このファイルはClaude Codeがこのリポジトリで作業する際に自動的に読み込む、プロジェクトの文脈情報です。
