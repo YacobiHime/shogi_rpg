@@ -324,12 +324,13 @@ version 2状態
 - 戦形の相性表（三すくみ的な単純化か、実際の将棋理論に基づくものか）の設計
 - スマートフォンでのWASMエンジンの実速度検証
 
-## 9. 短編キャンペーン層
+## 9. 七村RPG進行層
 
-`src/campaign/`はタイトル、会話、軍勢、布陣、棋貨、援軍、エンディングを担当する静的SPAである。
-対局自体は`src/board-ui/`をiframeで再利用する。開始メッセージへ任意の`start_sfen`、結果へ
-`final_sfen`を追加し、`src/campaign/sfen-army.mjs`が両者を軍勢データへ相互変換する。
+`src/rpg/`は名前入力、村移動、会話、対局選択、報酬、経験値、棋貨、店、宝箱、
+サブクエスト、定跡集、設定、復活の呪文、エンディングを担当する静的SPAである。
+`src/rpg/world-state.mjs`が`data/world.json`と各マスタの参照を検証し、報酬の重複防止と
+レベル解禁を一元管理する。対局自体は`src/board-ui/`をiframeで再利用する。
 
-本編の進行は`shogi_rpg_campaign`キーへ自動保存する。対局UIの既存`shogi_rpg_save`とは
-責務を分け、旧セーブ・復活の呪文・単独対局との互換を維持する。Hostingのルート入口は
-短編SPAとし、従来のティラノ入口は`/src/novel/index.html`から引き続き利用できる。
+本編と対局UIは共通の`shogi_rpg_save` version 2を使用するため、対局中に消費したヒント・
+待ったも村へ戻った時点で反映される。Hostingのルート入口は七村RPGとし、従来のティラノ入口は
+`/src/novel/index.html`、単独対局は`/src/board-ui/index.html`から引き続き利用できる。

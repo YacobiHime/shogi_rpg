@@ -93,7 +93,7 @@ function build() {
   copyTree('tyrano', () => true);
   copyTree(join('src', 'engine'), (file) => extname(file) === '.js');
   copyTree(join('src', 'novel'), (file) => ['.html', '.mjs'].includes(extname(file)));
-  copyTree(join('src', 'campaign'), (file) => ['.html', '.mjs', '.css'].includes(extname(file)));
+  copyTree(join('src', 'rpg'), (file) => ['.html', '.mjs', '.css'].includes(extname(file)));
   copyTree(join('src', 'save'), (file) => extname(file) === '.mjs');
   copyTree(join('assets', 'nnue'), (file) => extname(file) === '.bin');
   copyBoardUi();
@@ -102,11 +102,11 @@ function build() {
     join(ROOT, 'docs', 'ASSETS_CREDITS.md'),
     join(DIST, 'ASSETS_CREDITS.md'),
   );
-  copyFile(join(ROOT, 'src', 'campaign', 'index.html'), join(DIST, 'index.html'));
+  copyFile(join(ROOT, 'src', 'rpg', 'index.html'), join(DIST, 'index.html'));
   validateNnueAssets();
 
   console.log(`Firebase Hosting用ファイルをdistへ出力しました（${countFiles(DIST)}ファイル）`);
-  console.log('エントリ: /index.html（本編キャンペーン）');
+  console.log('エントリ: /index.html（七つの将棋村）');
 }
 
 build();

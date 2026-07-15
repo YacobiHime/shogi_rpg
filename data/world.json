@@ -33,7 +33,7 @@
       "subtitle": "守りと詰みの一歩目",
       "background_asset": "bg_chapter1",
       "boss_id": "ch1_boss_gen",
-      "guide_books": ["shogi_basics"],
+      "guide_books": ["shogi_basics", "head_gold"],
       "intro": [
         { "speaker": "夜古火姫", "emotion": "happy", "text": "はじめまして！ 夜の古い火と書いて、夜古火姫っていいます！" },
         { "speaker": "夜古火姫", "emotion": "normal", "text": "まずは玉を守ること、駒の利きを重ねること、そして詰みを覚えようね！" },

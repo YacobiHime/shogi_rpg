@@ -282,7 +282,6 @@ async function main() {
   const enemyId = params.get('enemy') || 'training_partner';
   const requestedDifficultyId = params.get('difficulty');
   const itemId = params.get('item');
-  const requestedStartSfen = params.get('start_sfen');
   setStatus('対局データを読み込み中...');
   setLoading('対局データを読み込み中...');
   const options = await loadMatchSetupOptions();
@@ -306,7 +305,20 @@ async function main() {
       unlockedFormationIds: new Set(playerSave.unlocked_formations),
       unlockedItemIds: new Set(playerSave.unlocked_items),
     });
-  const nodeDebuffMultiplier = getNodeDebuffMultiplier(equippedItem);
+  if (equippedItem?.consumable) {
+    const count = playerSave.item_counts[equippedItem.item_id] || 0;
+    if (count < 1) throw new Error(`「${equippedItem.name}」を持っていません`);
+    const remaining = count - 1;
+    playerSave = persistPlayerSave({
+      ...playerSave,
+      equipped_item: remaining === 0 ? null : playerSave.equipped_item,
+      item_counts: { ...playerSave.item_counts, [equippedItem.item_id]: remaining },
+    });
+  }
+  const nodeDebuffMultiplier = equippedItem?.type === 'enemy_debuff_nodes'
+    ? getNodeDebuffMultiplier(equippedItem) : 1;
+  const moveRankDebuff = equippedItem?.type === 'enemy_debuff_rank'
+    ? equippedItem.effect_value : 0;
   const assistLimits = applyAssistLimitUpgrades(
     {
       hints: playerSave.item_counts.hint_ticket || 0,
@@ -324,10 +336,9 @@ async function main() {
   );
   const effectiveMoveRank = calculateEffectiveMoveRank(
     enemy.move_rank,
-    difficulty.move_rank_max_bonus
+    difficulty.move_rank_max_bonus + moveRankDebuff
   );
   const nnuePath = resolveNnuePath(enemy.nnue_file);
-  const startSfen = requestedStartSfen || enemy.start_sfen_override || formation.start_sfen;
 
   setStatus('エンジンを初期化中...');
   setLoading('エンジンを初期化中...');
@@ -357,7 +368,7 @@ async function main() {
   loadingOverlay.hidden = true;
 
   const board = new BoardView(document.getElementById('board-container'), {
-    startSfen,
+    startSfen: enemy.start_sfen_override || formation.start_sfen,
     onMove: async (usiMove) => {
       await onHumanMove(usiMove);
     },
@@ -387,7 +398,6 @@ async function main() {
       outcome,
       reason,
       moveCount: moveHistory.length,
-      finalSfen: board.toSfen(),
     });
     return true;
   }
@@ -471,7 +481,7 @@ async function main() {
     updateDeclareWinButton();
     try {
       const moves = moveHistory.length ? ' moves ' + moveHistory.join(' ') : '';
-      engine.setPosition(startSfen + moves);
+      engine.setPosition((enemy.start_sfen_override || formation.start_sfen) + moves);
       const searchResult = await engine.go({
         nodes: hintNodeLimit,
         maxTimeMs: enemy.max_think_time_ms,
@@ -547,7 +557,7 @@ async function main() {
 
     setStatus('エンジン思考中...');
     const moves = moveHistory.length ? ' moves ' + moveHistory.join(' ') : '';
-    engine.setPosition(startSfen + moves);
+    engine.setPosition((enemy.start_sfen_override || formation.start_sfen) + moves);
 
     const searchResult = await engine.go({
       nodes: varyNodeLimit(effectiveNodeLimit, difficulty.node_limit_stddev_ratio),

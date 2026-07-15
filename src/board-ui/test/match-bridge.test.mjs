@@ -16,7 +16,6 @@ const config = {
   formationId: 'standard',
   difficultyId: 'normal',
   itemId: 'node_limit_half',
-  startSfen: '4k4/9/9/9/9/9/9/9/4K4 b - 1',
 };
 
 test('対局構成をiframe URLへ固定の契約で渡す', () => {
@@ -30,7 +29,6 @@ test('対局構成をiframe URLへ固定の契約で渡す', () => {
   assert.equal(url.searchParams.get('formation'), config.formationId);
   assert.equal(url.searchParams.get('difficulty'), config.difficultyId);
   assert.equal(url.searchParams.get('item'), config.itemId);
-  assert.equal(url.searchParams.get('start_sfen'), config.startSfen);
 });
 
 test('未知形式の対局構成を拒否する', () => {
@@ -49,7 +47,6 @@ test('対局結果をバージョン付きメッセージとして往復する',
     outcome: 'win',
     reason: 'checkmate',
     moveCount: 57,
-    finalSfen: '4k4/9/9/9/9/9/9/9/4K4 b G 57',
   });
   assert.deepEqual(parseMatchResultMessage(message, config.matchId), message);
   assert.equal(parseMatchResultMessage(message, 'different-match'), null);
