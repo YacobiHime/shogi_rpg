@@ -282,6 +282,7 @@ async function main() {
   const enemyId = params.get('enemy') || 'training_partner';
   const requestedDifficultyId = params.get('difficulty');
   const itemId = params.get('item');
+  const requestedStartSfen = params.get('start_sfen');
   setStatus('対局データを読み込み中...');
   setLoading('対局データを読み込み中...');
   const options = await loadMatchSetupOptions();
@@ -326,6 +327,7 @@ async function main() {
     difficulty.move_rank_max_bonus
   );
   const nnuePath = resolveNnuePath(enemy.nnue_file);
+  const startSfen = requestedStartSfen || enemy.start_sfen_override || formation.start_sfen;
 
   setStatus('エンジンを初期化中...');
   setLoading('エンジンを初期化中...');
@@ -355,7 +357,7 @@ async function main() {
   loadingOverlay.hidden = true;
 
   const board = new BoardView(document.getElementById('board-container'), {
-    startSfen: formation.start_sfen,
+    startSfen,
     onMove: async (usiMove) => {
       await onHumanMove(usiMove);
     },
@@ -385,6 +387,7 @@ async function main() {
       outcome,
       reason,
       moveCount: moveHistory.length,
+      finalSfen: board.toSfen(),
     });
     return true;
   }
@@ -468,7 +471,7 @@ async function main() {
     updateDeclareWinButton();
     try {
       const moves = moveHistory.length ? ' moves ' + moveHistory.join(' ') : '';
-      engine.setPosition(formation.start_sfen + moves);
+      engine.setPosition(startSfen + moves);
       const searchResult = await engine.go({
         nodes: hintNodeLimit,
         maxTimeMs: enemy.max_think_time_ms,
@@ -544,7 +547,7 @@ async function main() {
 
     setStatus('エンジン思考中...');
     const moves = moveHistory.length ? ' moves ' + moveHistory.join(' ') : '';
-    engine.setPosition(formation.start_sfen + moves);
+    engine.setPosition(startSfen + moves);
 
     const searchResult = await engine.go({
       nodes: varyNodeLimit(effectiveNodeLimit, difficulty.node_limit_stddev_ratio),

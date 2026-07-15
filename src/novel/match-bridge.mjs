@@ -3,6 +3,7 @@ export const MATCH_PROTOCOL_VERSION = 1;
 
 const ID_PATTERN = /^[a-z][a-z0-9_]*$/;
 const MATCH_ID_PATTERN = /^[A-Za-z0-9._:-]{1,64}$/;
+const SFEN_PATTERN = /^[A-Za-z0-9+\/]+ [bw] (?:-|[A-Za-z0-9]+) [1-9][0-9]*$/;
 const OUTCOMES = new Set(['win', 'loss', 'draw']);
 const REASONS = new Set([
   'checkmate',
@@ -32,7 +33,16 @@ export function normalizeMatchConfig(value) {
     formationId: requireId(value.formationId, 'formationId'),
     difficultyId: requireId(value.difficultyId, 'difficultyId'),
     itemId: value.itemId ? requireId(value.itemId, 'itemId') : null,
+    startSfen: normalizeOptionalSfen(value.startSfen, 'startSfen'),
   };
+}
+
+function normalizeOptionalSfen(value, field) {
+  if (value === undefined || value === null || value === '') return null;
+  if (typeof value !== 'string' || value.length > 256 || !SFEN_PATTERN.test(value)) {
+    throw new Error(`${field}が不正です`);
+  }
+  return value;
 }
 
 export function buildBoardMatchUrl(boardUrl, config, baseUrl) {
@@ -44,6 +54,7 @@ export function buildBoardMatchUrl(boardUrl, config, baseUrl) {
   url.searchParams.set('formation', normalized.formationId);
   url.searchParams.set('difficulty', normalized.difficultyId);
   if (normalized.itemId) url.searchParams.set('item', normalized.itemId);
+  if (normalized.startSfen) url.searchParams.set('start_sfen', normalized.startSfen);
   return url;
 }
 
@@ -70,11 +81,13 @@ export function createMatchResultMessage(config, result) {
       formation_id: normalized.formationId,
       difficulty_id: normalized.difficultyId,
       item_id: normalized.itemId,
+      start_sfen: normalized.startSfen,
     },
     result: {
       outcome: result.outcome,
       reason: result.reason,
       move_count: result.moveCount,
+      final_sfen: normalizeOptionalSfen(result.finalSfen, 'finalSfen'),
     },
   };
 }
@@ -92,10 +105,12 @@ export function parseMatchResultMessage(value, expectedMatchId) {
     formationId: value.match?.formation_id,
     difficultyId: value.match?.difficulty_id,
     itemId: value.match?.item_id,
+    startSfen: value.match?.start_sfen,
   }, {
     outcome: value.result?.outcome,
     reason: value.result?.reason,
     moveCount: value.result?.move_count,
+    finalSfen: value.result?.final_sfen,
   });
   return message;
 }

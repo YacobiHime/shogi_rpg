@@ -1,0 +1,71 @@
+{
+  "campaign_id": "yakobi_short",
+  "title": "夜古火姫と盤上の灯",
+  "currency_name": "棋貨",
+  "initial_currency": 8,
+  "initial_army": { "OU": 1, "KI": 1, "GI": 1, "FU": 5 },
+  "pieces": {
+    "OU": { "name": "あなた", "cost": 0, "voice": "みんなの声が、盤の向こうまで届いている。" },
+    "FU": { "name": "歩兵・ひなた", "cost": 1, "voice": "一歩ずつでも、あなたのためなら最後まで進みます！" },
+    "KY": { "name": "香車・まっすぐ", "cost": 2, "voice": "退路はいりません。あなたが示した筋を駆け抜けます。" },
+    "KE": { "name": "桂馬・かける", "cost": 3, "voice": "壁の向こうだって、あなたの声なら聞こえるよ！" },
+    "GI": { "name": "銀将・しろがね", "cost": 3, "voice": "危うい場所ほど私を。必ず道をひらきます。" },
+    "KI": { "name": "金将・かなえ", "cost": 4, "voice": "おそばは私が守ります。どうか、私たちを信じて。" },
+    "KA": { "name": "角行・すみれ", "cost": 6, "voice": "遠く離れても、斜めの道で心はつながっています。" },
+    "HI": { "name": "飛車・ひえん", "cost": 7, "voice": "縦でも横でも、あなたの危機へ真っ先に参ります！" }
+  },
+  "stages": [
+    {
+      "stage_id": "ember_gate",
+      "name": "第一陣・余白の門",
+      "enemy_id": "ch1_sora",
+      "enemy_sfen_board": "4k4/3g1s3/3ppp3/9/9/9/9/9/9",
+      "reward_currency": 5,
+      "friend": "KE",
+      "intro": [
+        { "speaker": "夜古火姫", "emotion": "happy", "text": "行列式の国へようこそ！ 私は夜の古い火と書いて、夜古火姫。行列式から生まれた神様です！" },
+        { "speaker": "夜古火姫", "emotion": "normal", "text": "ヤコブ・ヤコビと、古事記の八上比売から名をいただきました。数と縁が結ぶ、不思議な名前でしょう？" },
+        { "speaker": "夜古火姫", "emotion": "serious", "text": "零の帳が、駒と主君を結ぶ関係を消そうとしています。きみは玉将として、この盤を進んでください。" },
+        { "speaker": "歩兵・ひなた", "emotion": "happy", "text": "あなたが王なら、私たちは家臣です。どんな一手でも信じます。だから……大切に使ってくださいね！" }
+      ],
+      "victory": [
+        { "speaker": "桂馬・かける", "emotion": "happy", "text": "助けてくれた声、盤の向こうまで聞こえたよ。次はぼくも跳んでいく！" },
+        { "speaker": "夜古火姫", "emotion": "happy", "text": "新しい仲間です！ でも、前の戦いで離れた子も忘れないで。棋貨があれば再び呼べます。" }
+      ]
+    },
+    {
+      "stage_id": "cofactor_bridge",
+      "name": "第二陣・余因子の橋",
+      "enemy_id": "ch1_kana",
+      "enemy_sfen_board": "3gkg3/2r3s2/2ppppp2/9/9/9/9/9/9",
+      "reward_currency": 8,
+      "friend": "KA",
+      "intro": [
+        { "speaker": "夜古火姫", "emotion": "serious", "text": "ここからは前の局面を引き継ぎます。失った駒は敵の手に、取った駒はきみの手に残っています。" },
+        { "speaker": "金将・かなえ", "emotion": "normal", "text": "盤に置く者、持ち駒として時を待つ者。誰をどこへ遣わすか、あなたのお心のままに。" }
+      ],
+      "victory": [
+        { "speaker": "角行・すみれ", "emotion": "happy", "text": "敵だった私にも手を差し伸べてくださるのですね。今日から、この長い道はあなたのために。" },
+        { "speaker": "夜古火姫", "emotion": "sad", "text": "駒は命令を拒みません。だからこそ、その信頼を当たり前だと思わないでね。" }
+      ]
+    },
+    {
+      "stage_id": "determinant_throne",
+      "name": "最終陣・行列式の玉座",
+      "enemy_id": "ch1_boss_gen",
+      "enemy_sfen_board": "ln2k2nl/1r1g1sgb1/ppppppppp/9/9/9/9/9/9",
+      "reward_currency": 0,
+      "friend": "HI",
+      "intro": [
+        { "speaker": "夜古火姫", "emotion": "serious", "text": "行列式は、一つひとつの数ではなく関係から値を生みます。きみと駒たちも同じ。誰ひとり、ただの戦力ではありません。" },
+        { "speaker": "銀将・しろがね", "emotion": "happy", "text": "私たちはあなたが大好きです。最後の命令まで、どうぞ胸を張って。" },
+        { "speaker": "夜古火姫", "emotion": "happy", "text": "さあ、みんなで帰ろう。きみが結んだ縁を、零になんてさせない！" }
+      ],
+      "victory": [
+        { "speaker": "夜古火姫", "emotion": "happy", "text": "勝ったああっ！ 行列式の火が戻ったよ！ これが、きみと家臣たちの答えです！" },
+        { "speaker": "歩兵・ひなた", "emotion": "happy", "text": "最初の一歩から、ずっと信じていました。これからも、あなたの駒でいさせてください。" },
+        { "speaker": "夜古火姫", "emotion": "normal", "text": "命令に従ってくれることと、心がないことは違う。きみが大切にした一手を、私はずっと覚えています。" }
+      ]
+    }
+  ]
+}
