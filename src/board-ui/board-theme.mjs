@@ -11,6 +11,8 @@ export const BOARD_THEME = Object.freeze({
   selectedLight: '#93c5fd',
   selectedDark: '#3b82f6',
   selectedEdge: '#123f83',
+  lastMoveFrom: '#facc15',
+  lastMoveTo: '#f97316',
 });
 
 export const BOARD_PIECE_POINTS = '0,-25 17,-18 21,18 -21,18 -17,-18';

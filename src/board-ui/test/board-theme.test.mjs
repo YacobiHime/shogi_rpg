@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
+  BOARD_THEME,
   BOARD_PIECE_POINTS,
   HAND_PIECE_POINTS,
   isPromotedKind,
@@ -10,6 +11,12 @@ import {
 test('盤上駒と持ち駒は将棋駒らしい五角形で描画する', () => {
   assert.equal(BOARD_PIECE_POINTS.trim().split(/\s+/).length, 5);
   assert.equal(HAND_PIECE_POINTS.trim().split(/\s+/).length, 5);
+});
+
+test('敵の直前手は移動元と移動先を異なる色で表示する', () => {
+  assert.match(BOARD_THEME.lastMoveFrom, /^#[0-9a-f]{6}$/i);
+  assert.match(BOARD_THEME.lastMoveTo, /^#[0-9a-f]{6}$/i);
+  assert.notEqual(BOARD_THEME.lastMoveFrom, BOARD_THEME.lastMoveTo);
 });
 
 test('成駒だけを朱文字表示の対象にする', () => {

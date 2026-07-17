@@ -40,6 +40,35 @@ const SVG_NS = 'http://www.w3.org/2000/svg';
 const KIND_TO_USI = { FU: 'P', KY: 'L', KE: 'N', GI: 'S', KI: 'G', KA: 'B', HI: 'R' };
 const USI_TO_KIND = { P: 'FU', L: 'KY', N: 'KE', S: 'GI', G: 'KI', B: 'KA', R: 'HI' };
 
+function parseSquare(file, rank) {
+  return {
+    x: Number(file),
+    y: rank.charCodeAt(0) - 'a'.charCodeAt(0) + 1,
+  };
+}
+
+export function parseUsiMove(usiMove) {
+  const move = /^([1-9])([a-i])([1-9])([a-i])(\+)?$/.exec(usiMove);
+  if (move) {
+    return {
+      from: parseSquare(move[1], move[2]),
+      to: parseSquare(move[3], move[4]),
+      kind: null,
+      promote: Boolean(move[5]),
+    };
+  }
+  const drop = /^([PLNSGBR])\*([1-9])([a-i])$/.exec(usiMove);
+  if (drop) {
+    return {
+      from: null,
+      to: parseSquare(drop[2], drop[3]),
+      kind: USI_TO_KIND[drop[1]],
+      promote: false,
+    };
+  }
+  throw new Error(`不正なUSI指し手です: ${usiMove}`);
+}
+
 export class BoardView {
   /**
    * @param {HTMLElement} container
@@ -53,6 +82,7 @@ export class BoardView {
       this.shogi.initializeFromSFENString(callbacks.startSfen);
     }
     this.selected = null; // { x, y } または { hand: { color, kind } }
+    this.lastEnemyMove = null; // { from: { x, y } | null, to: { x, y } }
     this.humanColor = Color.Black; // M1では人間=先手固定
     this.locked = false; // 対局終了後の入力を無効化する
     this._awaitingPromotion = false; // 成り/不成り選択ダイアログの表示中は入力を無視する
@@ -77,6 +107,7 @@ export class BoardView {
     while (this.svg.firstChild) this.svg.removeChild(this.svg.firstChild);
     this._drawDefinitions();
     this._drawGrid();
+    this._drawEnemyMoveHighlights();
     this._drawSelectionHighlights();
     this._drawPieces();
     this._drawHands();
@@ -351,6 +382,26 @@ export class BoardView {
     });
   }
 
+  _drawEnemyMoveHighlights() {
+    if (!this.lastEnemyMove) return;
+    if (this.lastEnemyMove.from) {
+      this._drawSquareHighlight(
+        this.lastEnemyMove.from.x,
+        this.lastEnemyMove.from.y,
+        'last-enemy-move-from',
+        BOARD_THEME.lastMoveFrom,
+        0.3,
+      );
+    }
+    this._drawSquareHighlight(
+      this.lastEnemyMove.to.x,
+      this.lastEnemyMove.to.y,
+      'last-enemy-move-to',
+      BOARD_THEME.lastMoveTo,
+      0.46,
+    );
+  }
+
   _drawSquareHighlight(x, y, className, color, opacity) {
     const { cx, cy } = this._cellCenter(x, y);
     const rect = document.createElementNS(SVG_NS, 'rect');
@@ -378,10 +429,11 @@ export class BoardView {
     this.locked = true;
   }
 
-  /** 待ったで保存済みの局面へ戻し、選択状態も解除する。 */
+  /** 待ったで保存済みの局面へ戻し、選択状態と敵の直前手表示も解除する。 */
   restoreSfen(sfen) {
     this.shogi.initializeFromSFENString(sfen);
     this.selected = null;
+    this.lastEnemyMove = null;
     this._awaitingPromotion = false;
     this.render();
   }
@@ -517,23 +569,19 @@ export class BoardView {
 
   /** エンジンから返されたUSI形式の指し手をこちらの盤面にも反映する（敵の指し手適用用） */
   applyUsiMove(usiMove) {
-    const parseSquare = (file, rank) => ({
-      x: Number(file),
-      y: rank.charCodeAt(0) - 'a'.charCodeAt(0) + 1,
-    });
-
-    const promote = usiMove.endsWith('+');
-    const body = promote ? usiMove.slice(0, -1) : usiMove;
-
-    if (body[1] === '*') {
-      const kind = USI_TO_KIND[body[0]];
-      const { x, y } = parseSquare(body[2], body[3]);
-      this.shogi.drop(x, y, kind);
+    const parsed = parseUsiMove(usiMove);
+    if (parsed.kind) {
+      this.shogi.drop(parsed.to.x, parsed.to.y, parsed.kind);
     } else {
-      const from = parseSquare(body[0], body[1]);
-      const to = parseSquare(body[2], body[3]);
-      this.shogi.move(from.x, from.y, to.x, to.y, promote);
+      this.shogi.move(
+        parsed.from.x,
+        parsed.from.y,
+        parsed.to.x,
+        parsed.to.y,
+        parsed.promote,
+      );
     }
+    this.lastEnemyMove = { from: parsed.from, to: parsed.to };
     this.render();
   }
 
