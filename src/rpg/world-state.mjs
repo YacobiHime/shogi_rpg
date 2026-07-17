@@ -195,8 +195,9 @@ function applyReward(state, reward, progression) {
   };
 }
 
-export function applyEncounterVictory(state, chapter, encounter, progression) {
-  const firstVictory = !state.defeated_enemies.includes(encounter.enemy_id);
+export function applyEncounterVictory(state, chapter, encounter, progression, options = {}) {
+  const firstVictory = options.firstVictory
+    ?? !state.defeated_enemies.includes(encounter.enemy_id);
   let next = firstVictory
     ? applyReward(recordDefeatedEnemy(state, encounter.enemy_id), encounter.reward, progression)
     : { ...state, currency: state.currency + progression.world.repeat_victory_currency };
@@ -213,6 +214,16 @@ export function applyEncounterVictory(state, chapter, encounter, progression) {
     }
   }
   return { state: next, firstVictory, chapterCompleted };
+}
+
+export function reconcileChapterProgress(state, world) {
+  const defeated = new Set(state.defeated_enemies);
+  const unlockedChapter = world.chapters.reduce((latest, chapter, index) => {
+    if (!defeated.has(chapter.boss_id)) return latest;
+    return Math.max(latest, Math.min(index + 2, world.chapters.length));
+  }, 1);
+  if (state.chapter >= unlockedChapter) return state;
+  return { ...state, chapter: unlockedChapter };
 }
 
 export function openChest(state, chest, progression) {

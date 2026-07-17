@@ -11,6 +11,7 @@ import {
   openChest,
   playerDisplayName,
   questIsReady,
+  reconcileChapterProgress,
   validateBooksMaster,
   validateWorldMaster,
 } from './world-state.mjs';
@@ -229,6 +230,7 @@ function showBook(bookId) {
 async function startEncounter(enemyId) {
   const chapter = world.chapters.find((entry) => entry.encounters.some((item) => item.enemy_id === enemyId));
   const encounter = chapter.encounters.find((entry) => entry.enemy_id === enemyId);
+  const firstVictory = !state.defeated_enemies.includes(enemyId);
   const accepted = await modal(encounter.label, `<p>${escapeHtml(encounter.intro)}</p><p>難易度：${escapeHtml(catalogs.difficulties.find((entry) => entry.difficulty_id === state.difficulty).name)}</p>`, [
     { label: '戻る', value: false }, { label: '対局開始', value: true, primary: true },
   ]);
@@ -245,7 +247,13 @@ async function startEncounter(enemyId) {
     state = loadSaveState(localStorage, saveContext).state;
     if (message.result.outcome === 'win') {
       const previousLevel = state.player_level;
-      const result = applyEncounterVictory(state, chapter, encounter, progression);
+      const result = applyEncounterVictory(
+        state,
+        chapter,
+        encounter,
+        progression,
+        { firstVictory },
+      );
       save(result.state);
       const levelUp = state.player_level > previousLevel ? `<p class="done">レベル${state.player_level}になりました！</p>` : '';
       const completion = result.chapterCompleted ? dialogueHtml(chapter.completion) : '';
@@ -334,7 +342,8 @@ async function main() {
     saveContext = buildSaveContext(catalogs, validation);
     progression = { world, items: setup.items, levelUnlocks: setup.levelUnlocks };
     const loaded = loadSaveState(localStorage, saveContext);
-    state = loaded.state;
+    state = reconcileChapterProgress(loaded.state, world);
+    if (state !== loaded.state) save(state);
     if (state.profile_created) {
       const availableGuides = world.chapters
         .filter((chapter) => chapter.number <= state.chapter)
