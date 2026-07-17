@@ -52,6 +52,30 @@ nav_order: 5
 }
 ```
 
+### 2.1 対局中の戦形コールアウト（`data/formation_callouts.json`）
+
+盤面の駒配置から戦形を検出した際に、やこび姫が表示する文言を管理する。
+検出条件は`src/board-ui/formation-callouts.mjs`に置き、表示名と発話文をマスタデータとする。
+
+```jsonc
+{
+  "version": 1,
+  "initial_speech": "戦形が見えたら知らせるね！", // 対局開始時の吹き出し
+  "undo_speech": "もう一度、盤面を見てみよう！", // 待った使用時の吹き出し
+  "callouts": [
+    {
+      "callout_id": "bogin", // 検出処理と対応する一意ID
+      "name": "棒銀",        // 表示名
+      "speech": "棒銀！"     // 検出時の発話文
+    }
+  ]
+}
+```
+
+- 現行の`callout_id`は`bogin`、`gold_yagura`、`right_shiken`を必須とする
+- `name`は1〜30文字、`speech`は1〜40文字、開始時・待った時の文言は1〜80文字とする
+- 同じ`callout_id`は1局につき一度だけ発話し、先手・後手のどちらが組んでも検出対象とする
+
 ## 3. アイテム／スキルデータ（`data/items.json`）
 
 ファイルのルートは、以下のオブジェクトを要素に持つ配列とする。

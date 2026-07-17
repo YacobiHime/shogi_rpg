@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "initial_speech": "戦形が見えたら知らせるね！",
+  "undo_speech": "もう一度、盤面を見てみよう！",
+  "callouts": [
+    {
+      "callout_id": "bogin",
+      "name": "棒銀",
+      "speech": "棒銀！"
+    },
+    {
+      "callout_id": "gold_yagura",
+      "name": "金矢倉囲い",
+      "speech": "金矢倉囲い！"
+    },
+    {
+      "callout_id": "right_shiken",
+      "name": "右四間飛車",
+      "speech": "右四間飛車！"
+    }
+  ]
+}

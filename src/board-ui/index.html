@@ -35,8 +35,39 @@
     color: var(--muted); font-size: 16px; text-align: center;
   }
   #board-container {
-    width: min(100%, 600px); margin: 0 auto; padding: 0 8px 18px;
+    width: min(100%, 600px); margin: 0; padding: 0 8px 18px;
     filter: drop-shadow(0 16px 24px rgba(0,0,0,0.35));
+  }
+  #match-layout {
+    display: grid; grid-template-columns: minmax(0, 600px) 190px;
+    align-items: end; justify-content: center; gap: 8px;
+    width: min(100%, 820px); margin: 0 auto;
+  }
+  #yakobihime-guide {
+    display: flex; flex-direction: column; align-items: center; align-self: end;
+    min-width: 0; padding: 0 6px 20px;
+  }
+  #yakobihime-speech {
+    position: relative; width: 100%; margin: 0 0 8px; padding: 12px 10px;
+    border: 3px solid #8f5f2f; border-radius: 16px; color: #392315;
+    background: #fff8df; font-weight: 800; line-height: 1.45; text-align: center;
+    filter: drop-shadow(0 5px 7px rgba(0,0,0,0.32));
+  }
+  #yakobihime-speech::after {
+    content: ""; position: absolute; left: 50%; bottom: -12px;
+    width: 18px; height: 18px; border-right: 3px solid #8f5f2f;
+    border-bottom: 3px solid #8f5f2f; background: #fff8df;
+    transform: translateX(-50%) rotate(45deg);
+  }
+  #yakobihime-image {
+    display: block; width: min(100%, 170px); height: auto;
+    filter: drop-shadow(0 8px 8px rgba(0,0,0,0.4));
+  }
+  #yakobihime-guide.speaking { animation: yakobihime-pop 0.36s ease-out; }
+  @keyframes yakobihime-pop {
+    0% { transform: scale(0.92); }
+    65% { transform: scale(1.04); }
+    100% { transform: scale(1); }
   }
   .shogi-board { display: block; overflow: visible; }
   .board-coordinate {
@@ -118,6 +149,19 @@
   #save-panel button { padding: 8px 12px; margin: 7px 0 12px; }
   #save-status, #save-code-message { min-height: 1.4em; color: #ccc; }
   #save-code-message { color: #facc15; }
+  @media (max-width: 780px) {
+    #match-layout { display: block; }
+    #board-container { margin: 0 auto; }
+    #yakobihime-guide {
+      flex-direction: row-reverse; justify-content: center; gap: 12px;
+      width: min(100%, 560px); margin: -12px auto 8px; padding: 0 12px;
+    }
+    #yakobihime-image { width: 112px; }
+    #yakobihime-speech { max-width: 290px; margin: 0; }
+    #yakobihime-speech::after {
+      left: auto; right: -12px; bottom: 50%; transform: translateY(50%) rotate(-45deg);
+    }
+  }
   @media (max-width: 520px) {
     h1 { padding-top: 12px; }
     #status { font-size: 14px; }
@@ -125,6 +169,8 @@
     #game-actions button { flex: 1 1 calc(50% - 7px); min-width: 132px; }
     #setup-screen { margin: 12px; padding: 18px; }
     #board-container { padding-inline: 2px; }
+    #yakobihime-image { width: 92px; }
+    #yakobihime-speech { max-width: 220px; padding: 9px; font-size: 14px; }
   }
 </style>
 </head>
@@ -177,7 +223,13 @@
       <button id="restart-button">対局条件を選び直す</button>
     </div>
     <p id="hint-message" role="status" aria-live="polite"></p>
-    <div id="board-container"></div>
+    <div id="match-layout">
+      <div id="board-container"></div>
+      <aside id="yakobihime-guide" aria-label="やこび姫の戦形ガイド">
+        <p id="yakobihime-speech" role="status" aria-live="polite">戦形が見えたら知らせるね！</p>
+        <img id="yakobihime-image" src="/assets/characters/yakobihime-chibi.png" alt="戦形を知らせるミニキャラのやこび姫">
+      </aside>
+    </div>
   </main>
   <div id="result-overlay" hidden>
     <p id="result-message"></p>
@@ -192,6 +244,6 @@
     <button id="loading-retry" hidden>再試行</button>
   </div>
 
-  <script type="module" src="./main.js?v=board-art-1"></script>
+  <script type="module" src="./main.js?v=yakobihime-callouts-1"></script>
 </body>
 </html>

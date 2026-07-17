@@ -96,6 +96,7 @@ function build() {
   copyTree(join('src', 'rpg'), (file) => ['.html', '.mjs', '.css'].includes(extname(file)));
   copyTree(join('src', 'save'), (file) => extname(file) === '.mjs');
   copyTree(join('assets', 'nnue'), (file) => extname(file) === '.bin');
+  copyTree(join('assets', 'characters'), (file) => ['.png', '.webp'].includes(extname(file)));
   copyBoardUi();
   copyFile(join(ROOT, 'LICENSE'), join(DIST, 'LICENSE'));
   copyFile(

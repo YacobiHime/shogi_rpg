@@ -14,6 +14,7 @@ import {
   varyNodeLimit,
 } from './difficulty.mjs';
 import { evaluateEnteringKingDeclaration } from './entering-king.mjs';
+import { findNewFormationCallouts } from './formation-callouts.mjs';
 import { loadEngineFactories } from './engine-loader.mjs';
 import { getNodeDebuffMultiplier } from './items.mjs';
 import { applyAssistLimitUpgrades } from './level-unlocks.mjs';
@@ -62,6 +63,8 @@ const saveCodeInput = document.getElementById('save-code-input');
 const saveCodeRestoreButton = document.getElementById('save-code-restore');
 const saveCodeMessage = document.getElementById('save-code-message');
 const gameScreen = document.getElementById('game-screen');
+const yakobihimeGuide = document.getElementById('yakobihime-guide');
+const yakobihimeSpeech = document.getElementById('yakobihime-speech');
 let wakeLock = null;
 
 function reloadPage() {
@@ -375,6 +378,7 @@ async function main() {
   });
 
   let moveHistory = [];
+  const announcedFormationIds = new Set();
   let gameOver = false;
   let engineBusy = false;
   let hintsUsed = 0;
@@ -385,6 +389,27 @@ async function main() {
     moveHistoryLength: 0,
     repetitionLength: repetitionTracker.length,
   });
+
+  function setYakobihimeSpeech(text, animate = false) {
+    yakobihimeSpeech.textContent = text;
+    if (!animate) return;
+    yakobihimeGuide.classList.remove('speaking');
+    void yakobihimeGuide.offsetWidth;
+    yakobihimeGuide.classList.add('speaking');
+  }
+
+  function announceDetectedFormation() {
+    const detected = findNewFormationCallouts(
+      board.toSfen(), options.formationCallouts, announcedFormationIds
+    );
+    const callout = detected[0];
+    if (!callout) return;
+    announcedFormationIds.add(callout.callout_id);
+    setYakobihimeSpeech(callout.speech, true);
+  }
+
+  setYakobihimeSpeech(options.formationCallouts.initial_speech);
+  announceDetectedFormation();
 
   function finishMatch({ outcome, reason, status, message }) {
     if (gameOver) return false;
@@ -526,6 +551,7 @@ async function main() {
     moveHistory.length = snapshot.moveHistoryLength;
     repetitionTracker.truncate(snapshot.repetitionLength);
     board.restoreSfen(snapshot.sfen);
+    setYakobihimeSpeech(options.formationCallouts.undo_speech);
     hintMessageEl.textContent = '';
     setStatus('待ったを使いました。指し直してください。');
     updateDeclareWinButton();
@@ -539,6 +565,7 @@ async function main() {
     declareWinButton.disabled = true;
     updateAssistButtons();
     moveHistory.push(usiMove);
+    announceDetectedFormation();
 
     if (finishByRepetition(repetitionTracker.record(
       board.toSfen(), Color.Black, board.isCheck(Color.White)
@@ -586,6 +613,7 @@ async function main() {
 
     moveHistory.push(move);
     board.applyUsiMove(move);
+    announceDetectedFormation();
 
     if (finishByRepetition(repetitionTracker.record(
       board.toSfen(), Color.White, board.isCheck(Color.Black)

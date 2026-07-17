@@ -1,18 +1,20 @@
 import { DIFFICULTY_NAMES, validateDifficulties } from './difficulty.mjs';
 import { validateEnemies } from './enemies.mjs';
 import { validateFormations } from './formations.mjs';
+import { validateFormationCallouts } from './formation-callouts.mjs';
 import { validateItems } from './items.mjs';
 import { getUnlockState, validateLevelUnlocks } from './level-unlocks.mjs';
 
 /**
  * 準備画面で使用する敵・戦形・難易度の一覧を取得する。
- * @param {{ fetchImpl?: typeof fetch, enemiesUrl?: string, formationsUrl?: string, difficultyUrl?: string, itemsUrl?: string, levelUnlocksUrl?: string }} [options]
+ * @param {{ fetchImpl?: typeof fetch, enemiesUrl?: string, formationsUrl?: string, formationCalloutsUrl?: string, difficultyUrl?: string, itemsUrl?: string, levelUnlocksUrl?: string }} [options]
  */
 export async function loadMatchSetupOptions(options = {}) {
   const fetchImpl = options.fetchImpl || fetch;
-  const [enemyResponse, formationResponse, difficultyResponse, itemsResponse, levelUnlocksResponse] = await Promise.all([
+  const [enemyResponse, formationResponse, formationCalloutsResponse, difficultyResponse, itemsResponse, levelUnlocksResponse] = await Promise.all([
     fetchImpl(options.enemiesUrl || '../../data/enemies.json'),
     fetchImpl(options.formationsUrl || '../../data/formations.json'),
+    fetchImpl(options.formationCalloutsUrl || '../../data/formation_callouts.json'),
     fetchImpl(options.difficultyUrl || '../../data/difficulty.json'),
     fetchImpl(options.itemsUrl || '../../data/items.json'),
     fetchImpl(options.levelUnlocksUrl || '../../data/level_unlocks.json'),
@@ -21,6 +23,7 @@ export async function loadMatchSetupOptions(options = {}) {
   const responses = [
     [enemyResponse, '敵'],
     [formationResponse, '戦形'],
+    [formationCalloutsResponse, '戦形コールアウト'],
     [difficultyResponse, '難易度'],
     [itemsResponse, 'アイテム'],
     [levelUnlocksResponse, 'レベル解禁'],
@@ -32,6 +35,7 @@ export async function loadMatchSetupOptions(options = {}) {
   }
 
   const formations = validateFormations(await formationResponse.json());
+  const formationCallouts = validateFormationCallouts(await formationCalloutsResponse.json());
   const enemies = validateEnemies(
     await enemyResponse.json(),
     formations.map((formation) => formation.formation_id)
@@ -47,7 +51,7 @@ export async function loadMatchSetupOptions(options = {}) {
     ...difficultyData[difficultyId],
   }));
 
-  return { enemies, formations, difficulties, items, levelUnlocks };
+  return { enemies, formations, formationCallouts, difficulties, items, levelUnlocks };
 }
 
 /**

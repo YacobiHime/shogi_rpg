@@ -330,6 +330,7 @@ async function main() {
       loadMatchSetupOptions({
         enemiesUrl: '/data/enemies.json',
         formationsUrl: '/data/formations.json',
+        formationCalloutsUrl: '/data/formation_callouts.json',
         difficultyUrl: '/data/difficulty.json',
         itemsUrl: '/data/items.json',
         levelUnlocksUrl: '/data/level_unlocks.json',
