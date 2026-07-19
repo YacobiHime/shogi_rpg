@@ -45,6 +45,7 @@ const STANDARD_BOOK_VIRTUAL_PATH = '/user_book1.db';
 const STANDARD_BOOK_MAX_MOVES = 40;
 const HINT_MULTI_PV = 3;
 const HINT_PV_MOVE_LIMIT = 6;
+const HINT_ANALYSIS_NODE_CHUNK = 1_000;
 
 const statusEl = document.getElementById('status');
 const resignButton = document.getElementById('resign-button');
@@ -411,6 +412,7 @@ async function main() {
   let gameOver = false;
   let engineBusy = false;
   let hintAnalyzing = false;
+  let hintStopRequested = false;
   let hintsUsed = 0;
   let undoUsed = 0;
   const repetitionTracker = new RepetitionTracker(board.toSfen());
@@ -545,20 +547,22 @@ async function main() {
 
   hintButton.addEventListener('click', async () => {
     if (hintAnalyzing) {
+      hintStopRequested = true;
       hintButton.textContent = '停止中...';
       hintButton.disabled = true;
-      engine.stop();
       return;
     }
     if (gameOver || engineBusy || !board.isHumanTurn()
       || hintsUsed >= assistLimits.hints) return;
     engineBusy = true;
     hintAnalyzing = true;
+    hintStopRequested = false;
     hintMessageEl.textContent = '解析を開始しています...\nもう一度押すと停止します。';
     updateAssistButtons();
     updateDeclareWinButton();
     const restoreStandardBook = standardBookEnabled && !openingBook;
     let latestUpdate = null;
+    let latestSearchResult = null;
     let renderFrame = null;
     try {
       const moves = moveHistory.length ? ' moves ' + moveHistory.join(' ') : '';
@@ -566,28 +570,32 @@ async function main() {
       engine.applyStrengthOptions({ multiPv: HINT_MULTI_PV });
       if (restoreStandardBook) engine.disableOwnBook();
       engine.setPosition((enemy.start_sfen_override || formation.start_sfen) + moves);
-      const searchResult = await engine.go({
-        infinite: true,
-        onUpdate: (update) => {
-          latestUpdate = update;
-          if (renderFrame !== null) return;
-          renderFrame = requestAnimationFrame(() => {
-            renderFrame = null;
-            if (!hintAnalyzing) return;
-            const depth = latestUpdate.depth ? `深さ ${latestUpdate.depth}` : '深さ —';
-            const nodes = Number.isFinite(latestUpdate.nodes)
-              ? `${latestUpdate.nodes.toLocaleString('ja-JP')}局面`
-              : '局面数 —';
-            hintMessageEl.textContent = [
-              `解析中（${depth}／${nodes}）`,
-              ...latestUpdate.candidates.slice(0, HINT_MULTI_PV)
-                .flatMap((candidate) => hintCandidateLines(candidate, currentSfen)),
-              'もう一度押すと停止します。',
-            ].join('\n');
-          });
-        },
-      });
-      const hintMoves = getHintMoves(searchResult, HINT_MULTI_PV);
+      while (!hintStopRequested) {
+        latestSearchResult = await engine.go({
+          nodes: HINT_ANALYSIS_NODE_CHUNK,
+          onUpdate: (update) => {
+            latestUpdate = update;
+            if (renderFrame !== null) return;
+            renderFrame = requestAnimationFrame(() => {
+              renderFrame = null;
+              if (!hintAnalyzing || hintStopRequested) return;
+              const depth = latestUpdate.depth ? `深さ ${latestUpdate.depth}` : '深さ —';
+              const nodes = Number.isFinite(latestUpdate.nodes)
+                ? `${latestUpdate.nodes.toLocaleString('ja-JP')}局面`
+                : '局面数 —';
+              hintMessageEl.textContent = [
+                `解析中（${depth}／直近 ${nodes}）`,
+                ...latestUpdate.candidates.slice(0, HINT_MULTI_PV)
+                  .flatMap((candidate) => hintCandidateLines(candidate, currentSfen)),
+                'もう一度押すと停止します。',
+              ].join('\n');
+            });
+          },
+        });
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      }
+      if (!latestSearchResult) throw new Error('ヒントの探索結果を取得できませんでした');
+      const hintMoves = getHintMoves(latestSearchResult, HINT_MULTI_PV);
       hintAnalyzing = false;
       if (renderFrame !== null) cancelAnimationFrame(renderFrame);
       hintsUsed += 1;
@@ -630,7 +638,7 @@ async function main() {
   });
 
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'hidden' && hintAnalyzing) engine.stop();
+    if (document.visibilityState === 'hidden' && hintAnalyzing) hintStopRequested = true;
   });
 
   undoButton.addEventListener('click', () => {

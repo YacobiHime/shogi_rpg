@@ -216,7 +216,6 @@ export class ShogiEngine {
    * @param {{
    *   movetime?: number,
    *   nodes?: number,
-   *   infinite?: boolean,
    *   maxTimeMs?: number,
    *   searchMoves?: string[],
    *   onUpdate?: (update: {
@@ -242,7 +241,6 @@ export class ShogiEngine {
     let cmd = 'go';
     if (goOptions.movetime) cmd += ' movetime ' + goOptions.movetime;
     if (goOptions.nodes) cmd += ' nodes ' + goOptions.nodes;
-    if (goOptions.infinite) cmd += ' infinite';
     if (goOptions.searchMoves !== undefined) {
       if (!Array.isArray(goOptions.searchMoves) || goOptions.searchMoves.length === 0
         || goOptions.searchMoves.some(

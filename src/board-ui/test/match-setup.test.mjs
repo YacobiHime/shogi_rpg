@@ -163,14 +163,16 @@ test('標準定跡DBを読み込み、村固有の戦法がある対局では敵
   assert.match(source, /openingDecision\.status === 'active'/);
 });
 
-test('ヒントは敵の強さと切り離して上位3手を停止まで解析する', async () => {
+test('ヒントは短い探索を繰り返して上位3手を停止まで解析する', async () => {
   const source = await readFile(mainUrl, 'utf8');
   assert.match(source, /const HINT_MULTI_PV = 3/);
   assert.match(source, /const HINT_PV_MOVE_LIMIT = 6/);
-  assert.match(source, /infinite: true/);
+  assert.match(source, /const HINT_ANALYSIS_NODE_CHUNK = 1_000/);
+  assert.match(source, /nodes: HINT_ANALYSIS_NODE_CHUNK/);
+  assert.doesNotMatch(source, /infinite: true/);
   assert.match(source, /onUpdate: \(update\)/);
-  assert.match(source, /engine\.stop\(\)/);
-  assert.match(source, /getHintMoves\(searchResult, HINT_MULTI_PV\)/);
+  assert.match(source, /hintStopRequested = true/);
+  assert.match(source, /getHintMoves\(latestSearchResult, HINT_MULTI_PV\)/);
   assert.match(source, /hintCandidateLines\(candidate, currentSfen\)/);
   assert.match(source, /formatHintPrincipalVariation\(/);
 });
