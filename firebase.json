@@ -31,7 +31,7 @@
         ]
       },
       {
-        "regex": ".*\\.(wasm|data|bin)$",
+        "regex": ".*\\.(wasm|data|bin|db)$",
         "headers": [
           {
             "key": "Cache-Control",

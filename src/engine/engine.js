@@ -14,6 +14,34 @@
  *   （tools/m0-verification-suisho5/server.js に実装例あり）
  */
 
+const USI_MOVE_PATTERN = /^(?:[1-9][a-i][1-9][a-i]\+?|[PLNSGBR]\*[1-9][a-i])$/;
+
+function writeVirtualFile(mod, virtualPath, bytes) {
+  const lastSlash = virtualPath.lastIndexOf('/');
+  const directory = lastSlash > 0 ? virtualPath.slice(0, lastSlash) : '/';
+  const fileName = virtualPath.slice(lastSlash + 1);
+  if (!fileName || !virtualPath.startsWith('/') || virtualPath.includes('..')) {
+    throw new Error(`仮想FSパスが不正です: ${virtualPath}`);
+  }
+
+  if (mod.FS?.writeFile) {
+    if (directory !== '/') mod.FS.mkdirTree(directory);
+    mod.FS.writeFile(virtualPath, bytes);
+    return;
+  }
+  if (typeof mod.FS_createDataFile === 'function') {
+    if (directory !== '/') {
+      if (typeof mod.FS_createPath !== 'function') {
+        throw new Error('仮想FSのディレクトリ作成APIがありません');
+      }
+      mod.FS_createPath('/', directory.slice(1), true, true);
+    }
+    mod.FS_createDataFile(directory, fileName, bytes, true, true, true);
+    return;
+  }
+  throw new Error('仮想FSへファイルを書き込むAPIがありません');
+}
+
 /**
  * @typedef {Object} EngineOptions
  * @property {() => Promise<any>} factory
@@ -25,9 +53,14 @@
  *   評価関数ファイル(nn.bin等)のURL。本番エンジン(水匠5/hao)では必須。
  *   軽量版(arashigaoka)のように評価関数がwasm.data内に同梱されている場合は不要。
  * @property {string} [nnueVirtualPath] 仮想FS上の書き込み先パス（省略時 '/nn.bin'）
+ * @property {string} [bookPath] やねうら王形式の定跡DBのURL（省略時は読み込まない）
+ * @property {string} [bookVirtualPath]
+ *   仮想FS上の定跡DB書き込み先（省略時 '/user_book1.db'）
  * @property {typeof fetch} [fetchImpl] 評価関数の取得処理（テスト差し替え用）
  * @property {(details: { path: string, error: Error, stage: string }) => void} [onNnueFallback]
  *   評価関数を取得できず、内蔵評価関数へフォールバックした際の通知先。
+ * @property {(details: { path: string, error: Error, stage: string }) => void} [onBookFallback]
+ *   定跡DBを取得できず、定跡なしで続行する際の通知先。
  */
 
 export class ShogiEngine {
@@ -37,10 +70,15 @@ export class ShogiEngine {
     this.fallbackFactory = options.fallbackFactory || null;
     this.nnuePath = options.nnuePath || null;
     this.nnueVirtualPath = options.nnueVirtualPath || '/nn.bin';
+    this.bookPath = options.bookPath || null;
+    this.bookVirtualPath = options.bookVirtualPath || '/user_book1.db';
     this.fetchImpl = options.fetchImpl || fetch;
     this.onNnueFallback = options.onNnueFallback || null;
+    this.onBookFallback = options.onBookFallback || null;
     this.activeNnuePath = null;
+    this.activeBookPath = null;
     this.instance = null;
+    this._usiOptions = new Set();
     /** @type {((line: string) => void)[]} */
     this._listeners = [];
   }
@@ -67,6 +105,36 @@ export class ShogiEngine {
 
     /** @type {{ preRun: ((mod: any) => void)[] }} */
     const moduleArgs = { preRun: [] };
+    let bookPreRun = null;
+
+    if (this.bookPath) {
+      try {
+        const fetchImpl = this.fetchImpl;
+        const response = await fetchImpl(this.bookPath);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const bookBytes = new Uint8Array(await response.arrayBuffer());
+        if (bookBytes.byteLength === 0) throw new Error('定跡DBファイルが空です');
+        bookPreRun = (mod) => {
+          try {
+            writeVirtualFile(mod, this.bookVirtualPath, bookBytes);
+          } catch (cause) {
+            const error = cause instanceof Error ? cause : new Error(String(cause));
+            this.activeBookPath = null;
+            if (this.onBookFallback) {
+              this.onBookFallback({ path: this.bookPath, error, stage: 'filesystem' });
+            }
+          }
+        };
+        moduleArgs.preRun.push(bookPreRun);
+        this.activeBookPath = this.bookPath;
+      } catch (cause) {
+        const error = cause instanceof Error ? cause : new Error(String(cause));
+        this.activeBookPath = null;
+        if (this.onBookFallback) {
+          this.onBookFallback({ path: this.bookPath, error, stage: 'fetch' });
+        }
+      }
+    }
 
     let factory = this.factory;
     if (this.nnuePath) {
@@ -84,7 +152,7 @@ export class ShogiEngine {
         if (nnBytes.byteLength === 0) {
           throw new Error('評価関数ファイルが空です');
         }
-        moduleArgs.preRun.push((mod) => mod.FS.writeFile(this.nnueVirtualPath, nnBytes));
+        moduleArgs.preRun.push((mod) => writeVirtualFile(mod, this.nnueVirtualPath, nnBytes));
         this.activeNnuePath = this.nnuePath;
       } catch (cause) {
         const error = cause instanceof Error ? cause : new Error(String(cause));
@@ -105,11 +173,19 @@ export class ShogiEngine {
       if (this.onNnueFallback) {
         this.onNnueFallback({ path: this.nnuePath, error, stage: 'engine' });
       }
-      this.instance = await this.fallbackFactory({ preRun: [] });
+      this.instance = await this.fallbackFactory({ preRun: bookPreRun ? [bookPreRun] : [] });
     }
     this.instance.addMessageListener((line) => this._emit(line));
 
-    await this._sendAndWaitFor('usi', (line) => line === 'usiok');
+    this._usiOptions.clear();
+    await this._sendAndWaitFor(
+      'usi',
+      (line) => line === 'usiok',
+      (line) => {
+        const match = /^option name (.+?) type\s+\S+/.exec(line);
+        if (match) this._usiOptions.add(match[1]);
+      },
+    );
   }
 
   /**
@@ -137,7 +213,7 @@ export class ShogiEngine {
   /**
    * 思考を開始し、bestmoveを待って返す。
    * nodesを強さの基準とし、maxTimeMsは極端に遅い端末向けの安全上限として使う。
-   * @param {{ movetime?: number, nodes?: number, maxTimeMs?: number }} goOptions
+   * @param {{ movetime?: number, nodes?: number, maxTimeMs?: number, searchMoves?: string[] }} goOptions
    * @returns {Promise<{
    *   move: string,
    *   ponder?: string,
@@ -148,6 +224,17 @@ export class ShogiEngine {
     let cmd = 'go';
     if (goOptions.movetime) cmd += ' movetime ' + goOptions.movetime;
     if (goOptions.nodes) cmd += ' nodes ' + goOptions.nodes;
+    if (goOptions.searchMoves !== undefined) {
+      if (!Array.isArray(goOptions.searchMoves) || goOptions.searchMoves.length === 0
+        || goOptions.searchMoves.some(
+          (move) => typeof move !== 'string' || !USI_MOVE_PATTERN.test(move)
+        )) {
+        throw new Error('searchMovesは1件以上のUSI指し手配列にしてください');
+      }
+      const searchMoves = [...new Set(goOptions.searchMoves)];
+      // やねうら王はsearchmoves以降の全トークンを指し手として読むため、必ず末尾に置く。
+      cmd += ' searchmoves ' + searchMoves.join(' ');
+    }
 
     return new Promise((resolve) => {
       const candidates = new Map();
@@ -194,6 +281,35 @@ export class ShogiEngine {
     }
   }
 
+  supportsOption(name) {
+    if (typeof name !== 'string' || name.trim() === '') return false;
+    return this._usiOptions.has(name);
+  }
+
+  setOption(name, value) {
+    if (!this.supportsOption(name)) return false;
+    this.send(`setoption name ${name} value ${String(value)}`);
+    return true;
+  }
+
+  /** preRunで配置済みの定跡DBを、対応オプションがあるエンジンだけで有効化する。 */
+  enablePreloadedBook() {
+    if (!this.activeBookPath || !this.supportsOption('BookFile')) return false;
+    const lastSlash = this.bookVirtualPath.lastIndexOf('/');
+    const directory = lastSlash > 0 ? this.bookVirtualPath.slice(0, lastSlash) : '.';
+    const fileName = this.bookVirtualPath.slice(lastSlash + 1);
+    if (this.supportsOption('BookDir')) this.setOption('BookDir', directory);
+    if (this.supportsOption('USI_OwnBook')) this.setOption('USI_OwnBook', true);
+    return this.setOption('BookFile', fileName);
+  }
+
+  /** 内蔵定跡を無効化し、go searchmovesの候補外を選ばないようにする。 */
+  disableOwnBook() {
+    const ownBookDisabled = this.setOption('USI_OwnBook', false);
+    const bookFileDisabled = this.setOption('BookFile', 'no_book');
+    return ownBookDisabled || bookFileDisabled;
+  }
+
   send(command) {
     if (!this.instance) throw new Error('エンジンが初期化されていません');
     this.instance.postMessage(command);
@@ -203,9 +319,10 @@ export class ShogiEngine {
     if (this.instance) this.send('quit');
   }
 
-  _sendAndWaitFor(command, predicate) {
+  _sendAndWaitFor(command, predicate, onLine = null) {
     return new Promise((resolve) => {
       const listener = (line) => {
+        if (onLine) onLine(line);
         if (predicate(line)) {
           this._listeners.splice(this._listeners.indexOf(listener), 1);
           resolve();

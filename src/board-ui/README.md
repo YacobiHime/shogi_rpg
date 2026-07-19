@@ -12,6 +12,7 @@ src/board-ui/main.js      … 上記2つを繋ぐエントリポイント
 src/board-ui/entering-king.mjs … 27点法の入玉宣言条件を判定
 src/board-ui/formations.mjs … 戦形マスタの取得・検証・選択
 src/board-ui/enemies.mjs … 敵マスタの取得・検証・選択
+src/board-ui/enemy-opening-books.mjs … 村固有の敵定跡・完成形・飛車筋制約
 src/board-ui/difficulty.mjs … 難易度マスタの取得・検証・ノード数補正
 src/board-ui/items.mjs … アイテム／スキルマスタの取得・検証・探索量デバフ補正
 src/board-ui/match-assists.mjs … ヒント表示と待った用の手番履歴管理
@@ -92,6 +93,12 @@ cp node_modules/yaneuraou.wasm/yaneuraou.data ./yaneuraou.data
 `vendor/`へ同梱済み。これらは`@mizarjp/yaneuraou.halfkp.noeval` 7.6.3-alpha.0由来で、
 `nnue_file`を指定した敵のときだけ動的に読み込まれる。
 
+やねうら王公式の標準定跡DBは`assets/books/standard_book.db`（13,512,347 byte、約13.5MB）へ
+配置済み。`ShogiEngine`は初期化前にファイルを取得し、Emscripten仮想FSの
+`/user_book1.db`へpreloadする。新しい`FS.mkdirTree()` / `FS.writeFile()`と、同梱WASMの
+古い`FS_createPath()` / `FS_createDataFile()`の両方を扱う。取得・空ファイル・仮想FS書き込みの
+失敗時は、定跡なしの探索へフォールバックして対局を継続する。
+
 評価関数本体は既存ファイルを本番URLへコピーする。PowerShellでは次のように配置できる。
 
 ```powershell
@@ -100,6 +107,9 @@ Copy-Item ../../ShogiAI/hao/eval/nn.bin ../../assets/nnue/hao.bin
 ```
 
 `data/enemies.json`の`nnue_file`には、配置先の`suisho5.bin`または`hao.bin`を指定する。
+
+振電3（Shinden3）は同梱しない。ローカル評価関数はHalfKP 512次元で、現在のHalfKP noeval
+WASM（HalfKP 256次元）と非互換であり、第三者再配布の許諾も確認できていないためである。
 
 ### 3. 開発用HTTPサーバーの起動
 
@@ -128,6 +138,9 @@ node tools/build-hosting.mjs
 ```
 
 `data/enemies.json`が参照する`nnue_file`が`assets/nnue/`にない場合、ビルドはエラーで停止する。
+ビルドは`assets/books/standard_book.db`を固定パスから明示コピーし、`vendor/`はallowlistにある
+ブラウザ実行資産だけを許可する。`assets/nnue/`も全件ではなく、敵マスタが参照する`.bin`だけを
+コピーする。未知のvendor資産、参照先のないNNUE、不正なNNUEファイル名は配布せずビルドを停止する。
 Firebase CLIへログインした後、次のコマンドでローカル確認と配信を行う。
 
 ```powershell
@@ -165,6 +178,23 @@ http://localhost:<port>/src/board-ui/index.html?formation=standard&enemy=trainin
 敵は`data/enemies.json`へ追加する。未指定時は`training_partner`（稽古相手）を使用する。
 強さは`node_limit`を主基準とし、`max_think_time_ms`は低速端末で思考が終わらない場合の
 安全上限として使う。
+
+`opening_book_id: null`の一般敵は、仮想FSへ読み込んだ標準定跡DBをやねうら王の自己定跡として
+使用する。村固有の敵は`opening_book_id`から`data/enemy_openings.json`を引き、次の順序付き
+`steps`にある合法手をUSIの`go ... searchmoves ...`で優先する。自己定跡は`searchmoves`より先に
+着手を決めるため、この対局では`USI_OwnBook=false`と`BookFile=no_book`にして敵専用定跡を
+迂回させない。
+
+敵専用定跡の手が王手や進路妨害で違法なら、通常の合法手探索へフォールバックする。
+`constraints.rook_files`を持つ四間飛車は、`activate_after_move`の`8b4b`以後、飛車・竜の移動先と
+飛車打ちを1〜4筋へ限定した合法手だけを`searchmoves`へ渡す。したがって、定跡完成後や
+駒組み途中の妨害後も居飛車へ戻らない。現行の割り当ては次のとおり。
+
+- 第2章: 棒銀
+- 第3章: 四間飛車＋美濃囲い
+- 第4章: 角道を止める四間飛車
+- 第5章: 角換わり、横歩取り、相掛かり、汎用居飛車を敵ごとに指定
+- 第6章: 四間飛車穴熊
 
 `nnue_file`が`null`ならエンジン内蔵評価関数を使用する。ファイル名を指定する場合は、
 ライセンスとWASMエンジンとのNNUEアーキテクチャ一致を確認した評価関数を
@@ -231,6 +261,16 @@ Hosting用ビルド後、`http://localhost:8002/dist/index.html`を開くと`sce
 クリック判定（`_drawCellHitboxes()`）、王手放置となる着手と打ち歩詰めの拒否、
 通常の千日手と連続王手による反則の判定は実装済み。
 
+## 七村RPGの冒険コース
+
+`data/world.json`の各章は`course.nodes`と`course.links`を持つ。`main`リンクが入口から通常敵を
+経てボスへ至る本道、`branch`リンクが入口または敵地点から宝箱へ伸びる寄り道である。本道は先頭から
+連続して勝利したprefixだけを順番に解放し、未勝利の敵を飛ばせない。宝箱は接続元の勝利後に
+開けられるが、未開封でもボスへの本道を妨げない。
+
+旧セーブに後方の敵だけが記録されていても途中の地点は解放しない。一方、旧版でボス撃破済みなら
+章クリアを取り消さず、ボス地点と次章解放を復旧する。この救済は通常敵を勝利済みに補完しない。
+
 ## テスト
 
 ```bash
@@ -239,7 +279,8 @@ npm test
 
 敵・戦形・難易度・アイテムマスタのスキーマと参照整合性、難易度と探索量デバフを反映した実効ノード数と手のランク範囲、
 MultiPV候補の収集・ランダム選択・候補不足時のフォールバック、NNUEのパス解決・初期化前注入・
-エンジン動的選択・各初期化段階からの内蔵評価へのフォールバック、ノード数基準のUSIコマンドと
+エンジン動的選択・各初期化段階からの内蔵評価へのフォールバック、標準定跡DBの仮想FS preload、
+USIオプション検出、敵専用定跡と`go searchmoves`、四間飛車の飛車筋維持、ノード数基準のUSIコマンドと
 最大思考時間による停止処理を確認する。合法手フィルターが王手放置の盤上移動・持ち駒打ちと打ち歩詰めを拒否し、通常の
 歩打ち王手や歩以外の駒を打つ詰みは許可すること、および通常の千日手と連続王手による
 千日手を正しく区別することをNode.jsの組み込みテストランナーで確認する。

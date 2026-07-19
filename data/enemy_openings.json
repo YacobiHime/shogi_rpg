@@ -1,0 +1,158 @@
+{
+  "version": 1,
+  "books": [
+    {
+      "book_id": "white_bogin",
+      "name": "後手棒銀",
+      "side": "white",
+      "steps": [
+        { "moves": ["8c8d"] },
+        { "moves": ["8d8e"] },
+        { "moves": ["7a7b"] },
+        { "moves": ["7b8c"] },
+        { "moves": ["8c8d"] }
+      ],
+      "completion": [
+        { "square": "8b", "piece": "R" },
+        { "square": "8d", "piece": "S" },
+        { "square": "8e", "piece": "P" }
+      ]
+    },
+    {
+      "book_id": "white_shiken_mino",
+      "name": "後手四間飛車＋美濃囲い",
+      "side": "white",
+      "steps": [
+        { "moves": ["3c3d"] },
+        { "moves": ["4c4d"] },
+        { "moves": ["8b4b"] },
+        { "moves": ["5a6b"] },
+        { "moves": ["7a7b"] },
+        { "moves": ["6b7a"] },
+        { "moves": ["7a8b"] },
+        { "moves": ["6a6b"] }
+      ],
+      "completion": [
+        { "square": "4b", "piece": "R" },
+        { "square": "8b", "piece": "K" },
+        { "square": "7b", "piece": "S" },
+        { "square": "6b", "piece": "G" }
+      ],
+      "constraints": {
+        "rook_files": [1, 2, 3, 4],
+        "activate_after_move": "8b4b"
+      }
+    },
+    {
+      "book_id": "white_closed_shiken",
+      "name": "後手角道を止める四間飛車",
+      "side": "white",
+      "steps": [
+        { "moves": ["3c3d"] },
+        { "moves": ["4c4d"] },
+        { "moves": ["8b4b"] }
+      ],
+      "completion": [
+        { "square": "4b", "piece": "R" },
+        { "square": "4d", "piece": "P" }
+      ],
+      "constraints": {
+        "rook_files": [1, 2, 3, 4],
+        "activate_after_move": "8b4b"
+      }
+    },
+    {
+      "book_id": "white_kakugawari",
+      "name": "後手角換わり",
+      "side": "white",
+      "steps": [
+        { "moves": ["3c3d"] },
+        { "moves": ["8c8d"] },
+        { "moves": ["8d8e"] },
+        { "moves": ["2b8h+", "3a2b"] }
+      ],
+      "completion": [
+        { "square": "8b", "piece": "R" },
+        { "square": "8e", "piece": "P" }
+      ]
+    },
+    {
+      "book_id": "white_yokofudori",
+      "name": "後手横歩取り",
+      "side": "white",
+      "steps": [
+        { "moves": ["8c8d"] },
+        { "moves": ["8d8e"] },
+        { "moves": ["3c3d"] },
+        { "moves": ["8e8f"] },
+        { "moves": ["8b8f"] },
+        { "moves": ["8f7f"] }
+      ],
+      "completion": [
+        { "square": "7f", "piece": "R" },
+        { "square": "3d", "piece": "P" }
+      ]
+    },
+    {
+      "book_id": "white_aigakari",
+      "name": "後手相掛かり",
+      "side": "white",
+      "steps": [
+        { "moves": ["8c8d"] },
+        { "moves": ["8d8e"] },
+        { "moves": ["4a3b"] },
+        { "moves": ["8e8f"] },
+        { "moves": ["8b8f"] }
+      ],
+      "completion": [
+        { "square": "8f", "piece": "R" },
+        { "square": "3b", "piece": "G" }
+      ]
+    },
+    {
+      "book_id": "white_ibisha",
+      "name": "後手居飛車",
+      "side": "white",
+      "steps": [
+        { "moves": ["8c8d"] },
+        { "moves": ["8d8e"] },
+        { "moves": ["3c3d"] },
+        { "moves": ["4a3b"] }
+      ],
+      "completion": [
+        { "square": "8b", "piece": "R" },
+        { "square": "8e", "piece": "P" },
+        { "square": "3d", "piece": "P" },
+        { "square": "3b", "piece": "G" }
+      ]
+    },
+    {
+      "book_id": "white_shiken_anaguma",
+      "name": "後手四間飛車穴熊",
+      "side": "white",
+      "steps": [
+        { "moves": ["3c3d"] },
+        { "moves": ["4c4d"] },
+        { "moves": ["8b4b"] },
+        { "moves": ["5a6b"] },
+        { "moves": ["9a9b"] },
+        { "moves": ["6b7b"] },
+        { "moves": ["7b8b"] },
+        { "moves": ["8b9a"] },
+        { "moves": ["7a8b"] },
+        { "moves": ["6a7b"] }
+      ],
+      "completion": [
+        { "square": "4b", "piece": "R" },
+        { "square": "9a", "piece": "K" },
+        { "square": "9b", "piece": "L" },
+        { "square": "8b", "piece": "S" },
+        { "square": "7b", "piece": "G" }
+      ],
+      "constraints": {
+        "rook_files": [1, 2, 3, 4],
+        "activate_after_move": "8b4b"
+      }
+    }
+  ]
+}

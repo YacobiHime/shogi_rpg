@@ -1,5 +1,6 @@
 import { DIFFICULTY_NAMES, validateDifficulties } from './difficulty.mjs';
 import { validateEnemies } from './enemies.mjs';
+import { findEnemyOpeningBook, validateEnemyOpeningBooks } from './enemy-opening-books.mjs';
 import { validateFormations } from './formations.mjs';
 import { validateFormationCallouts } from './formation-callouts.mjs';
 import { validateItems } from './items.mjs';
@@ -7,13 +8,14 @@ import { getUnlockState, validateLevelUnlocks } from './level-unlocks.mjs';
 
 /**
  * 準備画面で使用する敵・戦形・難易度の一覧を取得する。
- * @param {{ fetchImpl?: typeof fetch, enemiesUrl?: string, formationsUrl?: string, formationCalloutsUrl?: string, difficultyUrl?: string, itemsUrl?: string, levelUnlocksUrl?: string }} [options]
+ * @param {{ fetchImpl?: typeof fetch, enemiesUrl?: string, formationsUrl?: string, enemyOpeningsUrl?: string, formationCalloutsUrl?: string, difficultyUrl?: string, itemsUrl?: string, levelUnlocksUrl?: string }} [options]
  */
 export async function loadMatchSetupOptions(options = {}) {
   const fetchImpl = options.fetchImpl || fetch;
-  const [enemyResponse, formationResponse, formationCalloutsResponse, difficultyResponse, itemsResponse, levelUnlocksResponse] = await Promise.all([
+  const [enemyResponse, formationResponse, enemyOpeningsResponse, formationCalloutsResponse, difficultyResponse, itemsResponse, levelUnlocksResponse] = await Promise.all([
     fetchImpl(options.enemiesUrl || '../../data/enemies.json'),
     fetchImpl(options.formationsUrl || '../../data/formations.json'),
+    fetchImpl(options.enemyOpeningsUrl || '../../data/enemy_openings.json'),
     fetchImpl(options.formationCalloutsUrl || '../../data/formation_callouts.json'),
     fetchImpl(options.difficultyUrl || '../../data/difficulty.json'),
     fetchImpl(options.itemsUrl || '../../data/items.json'),
@@ -23,6 +25,7 @@ export async function loadMatchSetupOptions(options = {}) {
   const responses = [
     [enemyResponse, '敵'],
     [formationResponse, '戦形'],
+    [enemyOpeningsResponse, '敵定跡'],
     [formationCalloutsResponse, '戦形コールアウト'],
     [difficultyResponse, '難易度'],
     [itemsResponse, 'アイテム'],
@@ -35,10 +38,12 @@ export async function loadMatchSetupOptions(options = {}) {
   }
 
   const formations = validateFormations(await formationResponse.json());
+  const enemyOpeningBooks = validateEnemyOpeningBooks(await enemyOpeningsResponse.json()).books;
   const formationCallouts = validateFormationCallouts(await formationCalloutsResponse.json());
   const enemies = validateEnemies(
     await enemyResponse.json(),
-    formations.map((formation) => formation.formation_id)
+    formations.map((formation) => formation.formation_id),
+    enemyOpeningBooks.map((book) => book.book_id),
   );
   const difficultyData = validateDifficulties(await difficultyResponse.json());
   const items = validateItems(await itemsResponse.json());
@@ -51,7 +56,15 @@ export async function loadMatchSetupOptions(options = {}) {
     ...difficultyData[difficultyId],
   }));
 
-  return { enemies, formations, formationCallouts, difficulties, items, levelUnlocks };
+  return {
+    enemies,
+    formations,
+    enemyOpeningBooks,
+    formationCallouts,
+    difficulties,
+    items,
+    levelUnlocks,
+  };
 }
 
 /**
@@ -74,6 +87,9 @@ export function resolveMatchSelection(options, selection) {
   const unlockedItemIds = selection.unlockedItemIds || unlockState.itemIds;
   const enemy = options.enemies.find((item) => item.enemy_id === selection.enemyId);
   if (!enemy) throw new Error(`指定された敵が見つかりません: ${selection.enemyId}`);
+  const openingBook = findEnemyOpeningBook(
+    options.enemyOpeningBooks || [], enemy.opening_book_id
+  );
   const formation = options.formations.find(
     (item) => item.formation_id === selection.formationId
   );
@@ -100,7 +116,7 @@ export function resolveMatchSelection(options, selection) {
       throw new Error(`この対局では敵弱体化棋具だけを装備できます: ${selection.itemId}`);
     }
   }
-  return { formation, enemy, difficulty, equippedItem, unlockState };
+  return { formation, enemy, openingBook, difficulty, equippedItem, unlockState };
 }
 
 /**

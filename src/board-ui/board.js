@@ -218,6 +218,8 @@ export class BoardView {
         rect.setAttribute('width', CELL);
         rect.setAttribute('height', CELL);
         rect.setAttribute('fill', 'transparent');
+        rect.classList.add('board-cell-hitbox');
+        rect.dataset.square = this._squareName(x, y);
         rect.style.cursor = 'pointer';
         rect.addEventListener('click', () => this._handleCellClick(x, y));
         this.svg.appendChild(rect);

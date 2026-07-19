@@ -34,6 +34,21 @@
       "background_asset": "bg_chapter1",
       "boss_id": "ch1_boss_gen",
       "guide_books": ["shogi_basics", "head_gold"],
+      "course": {
+        "nodes": [
+          { "node_id": "ch1_start", "type": "start", "label": "旅の入口", "x": 9, "y": 56 },
+          { "node_id": "ch1_sora_node", "type": "encounter", "enemy_id": "ch1_sora", "x": 34, "y": 56 },
+          { "node_id": "ch1_chest_square_node", "type": "chest", "chest_id": "ch1_chest_square", "x": 34, "y": 17 },
+          { "node_id": "ch1_kana_node", "type": "encounter", "enemy_id": "ch1_kana", "x": 61, "y": 56 },
+          { "node_id": "ch1_boss_gen_node", "type": "encounter", "enemy_id": "ch1_boss_gen", "x": 88, "y": 56 }
+        ],
+        "links": [
+          { "from": "ch1_start", "to": "ch1_sora_node", "kind": "main" },
+          { "from": "ch1_sora_node", "to": "ch1_chest_square_node", "kind": "branch" },
+          { "from": "ch1_sora_node", "to": "ch1_kana_node", "kind": "main" },
+          { "from": "ch1_kana_node", "to": "ch1_boss_gen_node", "kind": "main" }
+        ]
+      },
       "intro": [
         { "speaker": "夜古火姫", "emotion": "happy", "text": "はじめまして！ 夜の古い火と書いて、夜古火姫っていいます！" },
         { "speaker": "夜古火姫", "emotion": "normal", "text": "まずは玉を守ること、駒の利きを重ねること、そして詰みを覚えようね！" },
@@ -67,11 +82,11 @@
         {
           "enemy_id": "ch1_boss_gen",
           "label": "村長 玄に挑戦",
-          "description": "町の基本を確かめるボス戦。到着直後から挑める。",
+          "description": "ソラとカナを越えた先で、町の基本を確かめるボス戦。",
           "boss": true,
           "guide_id": "shogi_basics",
           "reward": { "experience": 100, "currency": 60, "books": ["bogin"] },
-          "intro": "玄「順番は問わん。今の力で、わしの玉を詰ませてみなさい。」",
+          "intro": "玄「ソラとカナから学んだ力で、わしの玉を詰ませてみなさい。」",
           "victory": "玄「見事。棒銀村へ通じる道を開こう。」",
           "loss": "玄「急がなくてよい。ソラとカナの将棋にも、勝つための種がある。」"
         }
@@ -95,6 +110,21 @@
       "background_asset": "bg_chapter2",
       "boss_id": "ch2_boss_ginka",
       "guide_books": ["bogin"],
+      "course": {
+        "nodes": [
+          { "node_id": "ch2_start", "type": "start", "label": "村の入口", "x": 9, "y": 53 },
+          { "node_id": "ch2_ayumu_node", "type": "encounter", "enemy_id": "ch2_ayumu", "x": 34, "y": 53 },
+          { "node_id": "ch2_chest_gate_node", "type": "chest", "chest_id": "ch2_chest_gate", "x": 34, "y": 88 },
+          { "node_id": "ch2_kei_node", "type": "encounter", "enemy_id": "ch2_kei", "x": 61, "y": 53 },
+          { "node_id": "ch2_boss_ginka_node", "type": "encounter", "enemy_id": "ch2_boss_ginka", "x": 88, "y": 53 }
+        ],
+        "links": [
+          { "from": "ch2_start", "to": "ch2_ayumu_node", "kind": "main" },
+          { "from": "ch2_ayumu_node", "to": "ch2_chest_gate_node", "kind": "branch" },
+          { "from": "ch2_ayumu_node", "to": "ch2_kei_node", "kind": "main" },
+          { "from": "ch2_kei_node", "to": "ch2_boss_ginka_node", "kind": "main" }
+        ]
+      },
       "intro": [
         { "speaker": "夜古火姫", "emotion": "happy", "text": "ここでは銀を飛車の前へ進める棒銀を覚えるよ！" },
         { "speaker": "夜古火姫", "emotion": "angry", "text": "でも銀だけ先に行かせちゃダメ！ 好き嫌いせず、飛車も歩もちゃんと働かせるの！" },
@@ -132,7 +162,7 @@
           "boss": true,
           "guide_id": "bogin",
           "reward": { "experience": 180, "currency": 90, "books": ["shikenbisha", "mino"] },
-          "intro": "銀花「村人と指さず、私へまっすぐ来ても構いません。棒銀らしいですね。」",
+          "intro": "銀花「二つの関門を越え、まっすぐここまで来ましたね。その棒銀を見せてください。」",
           "victory": "銀花「その速攻、確かに受け取りました。四間飛車村へどうぞ。」",
           "loss": "銀花「急ぐ手と、待つ手。その呼吸を村で探してみてください。」"
         }
@@ -157,6 +187,23 @@
       "background_asset": "bg_chapter3",
       "boss_id": "ch3_boss_tatsumi",
       "guide_books": ["shikenbisha", "mino"],
+      "course": {
+        "nodes": [
+          { "node_id": "ch3_start", "type": "start", "label": "川辺の入口", "x": 9, "y": 56 },
+          { "node_id": "ch3_minori_node", "type": "encounter", "enemy_id": "ch3_minori", "x": 27, "y": 56 },
+          { "node_id": "ch3_shiro_node", "type": "encounter", "enemy_id": "ch3_shiro", "x": 48, "y": 56 },
+          { "node_id": "ch3_chest_river_node", "type": "chest", "chest_id": "ch3_chest_river", "x": 48, "y": 17 },
+          { "node_id": "ch3_kaede_node", "type": "encounter", "enemy_id": "ch3_kaede", "x": 69, "y": 56 },
+          { "node_id": "ch3_boss_tatsumi_node", "type": "encounter", "enemy_id": "ch3_boss_tatsumi", "x": 91, "y": 56 }
+        ],
+        "links": [
+          { "from": "ch3_start", "to": "ch3_minori_node", "kind": "main" },
+          { "from": "ch3_minori_node", "to": "ch3_shiro_node", "kind": "main" },
+          { "from": "ch3_shiro_node", "to": "ch3_chest_river_node", "kind": "branch" },
+          { "from": "ch3_shiro_node", "to": "ch3_kaede_node", "kind": "main" },
+          { "from": "ch3_kaede_node", "to": "ch3_boss_tatsumi_node", "kind": "main" }
+        ]
+      },
       "intro": [
         { "speaker": "夜古火姫", "emotion": "normal", "text": "飛車を6筋へ動かして、反対側に美濃囲いを作るよ。攻めと守りを分担しよう！" },
         { "speaker": "thought", "text": "飛車を振る前に角道を開け、玉の行き先も考えよう。" }
@@ -167,7 +214,7 @@
       ],
       "encounters": [
         { "enemy_id": "ch3_minori", "label": "美濃のミノリと対局", "description": "美濃囲いの形と玉の移動を学ぶ。", "guide_id": "mino", "reward": { "experience": 120, "currency": 45 }, "intro": "ミノリ「玉を右へ、金銀を近くへ。慌てず城を作りましょう。」", "victory": "ミノリ「きれいな美濃囲い。守りの駒がよく働いていました。」", "loss": "ミノリ「玉が戦場へ近づいていないか、組む順番を見直しましょう。」" },
-        { "enemy_id": "ch3_shiro", "label": "居飛車のシロウと対局", "description": "居飛車を相手に四間飛車で受ける。", "guide_id": "shikenbisha", "reward": { "experience": 140, "currency": 50 }, "intro": "シロウ「僕は飛車を動かさない。君は振り飛車でどう受ける？」", "victory": "シロウ「飛車の場所が違うだけで、盤がこんなに変わるんだな。」", "loss": "シロウ「守りを完成させる前の仕掛けには気をつけて。」" },
+        { "enemy_id": "ch3_shiro", "label": "相振りのシロウと対局", "description": "四間飛車どうしの相振りで攻め筋を比べる。", "guide_id": "shikenbisha", "reward": { "experience": 140, "currency": 50 }, "intro": "シロウ「僕も四間へ飛車を振るよ。相振り飛車で、どちらが先にさばけるかな？」", "victory": "シロウ「同じ四間飛車でも、攻める順番で盤がこんなに変わるんだな。」", "loss": "シロウ「美濃囲いを完成させる前の仕掛けには気をつけて。」" },
         { "enemy_id": "ch3_kaede", "label": "飛車振り カエデと対局", "description": "囲いと四間飛車を一つの方針として使う。", "guide_id": "shikenbisha", "reward": { "experience": 160, "currency": 55, "items": { "thinking_hourglass": 1 } }, "intro": "カエデ「飛車を振ったら終わりじゃないよ。どこでさばくか見せて！」", "victory": "カエデ「いいさばき！ 飛車と角が広い場所へ出られたね。」", "loss": "カエデ「駒が詰まっていたら、交換できる場所を探してみよう。」" },
         { "enemy_id": "ch3_boss_tatsumi", "label": "四間指南役 辰巳に挑戦", "description": "居飛車の攻めを美濃囲いと四間飛車で迎える。", "boss": true, "guide_id": "shikenbisha", "reward": { "experience": 250, "currency": 120, "books": ["right_shiken", "elmo"] }, "intro": "辰巳「城を築く暇がなくとも、飛車を振る覚悟はあるか。」", "victory": "辰巳「攻守の釣り合い、見事。次の村は振り飛車対策を求めている。」", "loss": "辰巳「村の三局は、どれも違う不足を補ってくれる。」" }
       ],
@@ -191,6 +238,23 @@
       "background_asset": "bg_chapter4",
       "boss_id": "ch4_boss_ukyo",
       "guide_books": ["right_shiken", "elmo"],
+      "course": {
+        "nodes": [
+          { "node_id": "ch4_start", "type": "start", "label": "関所の入口", "x": 9, "y": 53 },
+          { "node_id": "ch4_koto_node", "type": "encounter", "enemy_id": "ch4_koto", "x": 27, "y": 53 },
+          { "node_id": "ch4_eru_node", "type": "encounter", "enemy_id": "ch4_eru", "x": 48, "y": 53 },
+          { "node_id": "ch4_chest_shrine_node", "type": "chest", "chest_id": "ch4_chest_shrine", "x": 48, "y": 88 },
+          { "node_id": "ch4_ukon_node", "type": "encounter", "enemy_id": "ch4_ukon", "x": 69, "y": 53 },
+          { "node_id": "ch4_boss_ukyo_node", "type": "encounter", "enemy_id": "ch4_boss_ukyo", "x": 91, "y": 53 }
+        ],
+        "links": [
+          { "from": "ch4_start", "to": "ch4_koto_node", "kind": "main" },
+          { "from": "ch4_koto_node", "to": "ch4_eru_node", "kind": "main" },
+          { "from": "ch4_eru_node", "to": "ch4_chest_shrine_node", "kind": "branch" },
+          { "from": "ch4_eru_node", "to": "ch4_ukon_node", "kind": "main" },
+          { "from": "ch4_ukon_node", "to": "ch4_boss_ukyo_node", "kind": "main" }
+        ]
+      },
       "intro": [
         { "speaker": "夜古火姫", "emotion": "normal", "text": "相手は角道を止めて四間飛車にするよ。右四間飛車とエルモ囲いで対抗しよう！" },
         { "speaker": "thought", "text": "相手の角道と飛車の位置を確認してから作戦を決めよう。" }
@@ -203,7 +267,7 @@
         { "enemy_id": "ch4_koto", "label": "角止めのコトと対局", "description": "相手が角道を止めた瞬間を見分ける。", "guide_id": "right_shiken", "reward": { "experience": 200, "currency": 60 }, "intro": "コト「角道を止めたよ。さあ、どこへ攻めを集める？」", "victory": "コト「見逃さなかったね。形を見て作戦を選べてる。」", "loss": "コト「最初の数手を、定跡書でもう一度見てみよう。」" },
         { "enemy_id": "ch4_eru", "label": "囲い手 絵留と対局", "description": "少ない手数でエルモ囲いを組む。", "guide_id": "elmo", "reward": { "experience": 220, "currency": 65 }, "intro": "絵留「攻めたいなら、短い手数で玉を安全にしてみて。」", "victory": "絵留「速くてコンパクト。攻め駒も残せたね。」", "loss": "絵留「囲いを広げすぎず、大事な金を置く場所を見て。」" },
         { "enemy_id": "ch4_ukon", "label": "右四間のウコンと対局", "description": "4筋へ飛車・銀・歩の力を集める。", "guide_id": "right_shiken", "reward": { "experience": 250, "currency": 70, "items": { "confusion_incense": 1 } }, "intro": "ウコン「右四間は集中が命。ばらばらの攻めでは届かないぞ。」", "victory": "ウコン「4筋に力が集まっていた。いい仕掛けだ！」", "loss": "ウコン「飛車だけでなく、銀と角の参加も確認してみろ。」" },
-        { "enemy_id": "ch4_boss_ukyo", "label": "右四間師範 右京に挑戦", "description": "四間飛車を相手に、右四間とエルモを完成させる。", "boss": true, "guide_id": "right_shiken", "reward": { "experience": 350, "currency": 150 }, "intro": "右京「村を飛ばして来たか。その決断ごと受け止めよう。」", "victory": "右京「突破の筋は身についた。居飛車の広い世界へ進め。」", "loss": "右京「コト、絵留、ウコン。それぞれに対策の一片を預けてある。」" }
+        { "enemy_id": "ch4_boss_ukyo", "label": "右四間師範 右京に挑戦", "description": "四間飛車を相手に、右四間とエルモを完成させる。", "boss": true, "guide_id": "right_shiken", "reward": { "experience": 350, "currency": 150 }, "intro": "右京「三つの関門で集めた対策、そのすべてを受け止めよう。」", "victory": "右京「突破の筋は身についた。居飛車の広い世界へ進め。」", "loss": "右京「コト、絵留、ウコン。それぞれの対策をもう一度つないでみよ。」" }
       ],
       "chests": [
         { "chest_id": "ch4_chest_shrine", "label": "小さな祠の宝箱", "reward": { "currency": 90, "items": { "thinking_hourglass": 1 } } }
@@ -226,9 +290,30 @@
       "background_asset": "bg_chapter5",
       "boss_id": "ch5_boss_naoe",
       "guide_books": [],
+      "course": {
+        "nodes": [
+          { "node_id": "ch5_start", "type": "start", "label": "三叉路の入口", "x": 9, "y": 53 },
+          { "node_id": "ch5_chest_kakugawari_node", "type": "chest", "chest_id": "ch5_chest_kakugawari", "x": 15, "y": 17 },
+          { "node_id": "ch5_kaku_node", "type": "encounter", "enemy_id": "ch5_kaku", "x": 27, "y": 53 },
+          { "node_id": "ch5_chest_yokofudori_node", "type": "chest", "chest_id": "ch5_chest_yokofudori", "x": 36, "y": 88 },
+          { "node_id": "ch5_yoko_node", "type": "encounter", "enemy_id": "ch5_yoko", "x": 48, "y": 53 },
+          { "node_id": "ch5_chest_aigakari_node", "type": "chest", "chest_id": "ch5_chest_aigakari", "x": 57, "y": 17 },
+          { "node_id": "ch5_ai_node", "type": "encounter", "enemy_id": "ch5_ai", "x": 69, "y": 53 },
+          { "node_id": "ch5_boss_naoe_node", "type": "encounter", "enemy_id": "ch5_boss_naoe", "x": 91, "y": 53 }
+        ],
+        "links": [
+          { "from": "ch5_start", "to": "ch5_chest_kakugawari_node", "kind": "branch" },
+          { "from": "ch5_start", "to": "ch5_kaku_node", "kind": "main" },
+          { "from": "ch5_kaku_node", "to": "ch5_chest_yokofudori_node", "kind": "branch" },
+          { "from": "ch5_kaku_node", "to": "ch5_yoko_node", "kind": "main" },
+          { "from": "ch5_yoko_node", "to": "ch5_chest_aigakari_node", "kind": "branch" },
+          { "from": "ch5_yoko_node", "to": "ch5_ai_node", "kind": "main" },
+          { "from": "ch5_ai_node", "to": "ch5_boss_naoe_node", "kind": "main" }
+        ]
+      },
       "intro": [
         { "speaker": "夜古火姫", "emotion": "happy", "text": "角換わり、横歩取り、相掛かり！ 三冊の定跡書が村の宝箱に隠されているよ！" },
-        { "speaker": "thought", "text": "宝箱は任意だ。先にボスへ挑むか、三つの序盤を調べるか選べる。" }
+        { "speaker": "thought", "text": "宝箱は任意だ。本道を進みながら、必要な定跡書へ寄り道しよう。" }
       ],
       "completion": [
         { "speaker": "居飛車指南役 直江", "text": "決まった形だけでなく、相手に応じる目が育っている。" },
@@ -263,6 +348,23 @@
       "background_asset": "bg_chapter6",
       "boss_id": "ch6_boss_kumanoi",
       "guide_books": ["anaguma", "anaguma_break"],
+      "course": {
+        "nodes": [
+          { "node_id": "ch6_start", "type": "start", "label": "城下の入口", "x": 9, "y": 56 },
+          { "node_id": "ch6_mogura_node", "type": "encounter", "enemy_id": "ch6_mogura", "x": 27, "y": 56 },
+          { "node_id": "ch6_toride_node", "type": "encounter", "enemy_id": "ch6_toride", "x": 48, "y": 56 },
+          { "node_id": "ch6_chest_wall_node", "type": "chest", "chest_id": "ch6_chest_wall", "x": 48, "y": 17 },
+          { "node_id": "ch6_kumano_node", "type": "encounter", "enemy_id": "ch6_kumano", "x": 69, "y": 56 },
+          { "node_id": "ch6_boss_kumanoi_node", "type": "encounter", "enemy_id": "ch6_boss_kumanoi", "x": 91, "y": 56 }
+        ],
+        "links": [
+          { "from": "ch6_start", "to": "ch6_mogura_node", "kind": "main" },
+          { "from": "ch6_mogura_node", "to": "ch6_toride_node", "kind": "main" },
+          { "from": "ch6_toride_node", "to": "ch6_chest_wall_node", "kind": "branch" },
+          { "from": "ch6_toride_node", "to": "ch6_kumano_node", "kind": "main" },
+          { "from": "ch6_kumano_node", "to": "ch6_boss_kumanoi_node", "kind": "main" }
+        ]
+      },
       "intro": [
         { "speaker": "夜古火姫", "emotion": "angry", "text": "みんな穴熊！ 固いからって、ずっと閉じこもるのはずるい！" },
         { "speaker": "夜古火姫", "emotion": "normal", "text": "……でも、端から攻めること、金銀をはがすことを覚えれば崩せるよ。" },
@@ -276,7 +378,7 @@
         { "enemy_id": "ch6_mogura", "label": "潜り手 モグラと対局", "description": "穴熊へ潜るまでの手数と隙を見る。", "guide_id": "anaguma", "reward": { "experience": 400, "currency": 95 }, "intro": "モグラ「玉が隅へ入るまで、ちゃんと待ってくれる？」", "victory": "モグラ「潜っている途中を狙われた！ そこも穴熊の弱点だね。」", "loss": "モグラ「完成した城へ届かないなら、組む途中も見てみて。」" },
         { "enemy_id": "ch6_toride", "label": "守り手 トリデと対局", "description": "金銀の連結と攻め駒の交換を学ぶ。", "guide_id": "anaguma_break", "reward": { "experience": 430, "currency": 100 }, "intro": "トリデ「この金銀を全部はがせるかな？」", "victory": "トリデ「一枚ずつ交換されて、最後は玉だけになってしまった。」", "loss": "トリデ「大駒を切る前に、後から続く攻め駒を数えてみよう。」" },
         { "enemy_id": "ch6_kumano", "label": "穴熊のクマノと対局", "description": "端攻めと、と金を使った遅い攻めを試す。", "guide_id": "anaguma_break", "reward": { "experience": 460, "currency": 110, "items": { "thinking_hourglass": 1 } }, "intro": "クマノ「速い王手だけが攻めじゃないよ。ゆっくり来てごらん。」", "victory": "クマノ「と金が近づくの、見た目よりずっと怖かったよ。」", "loss": "クマノ「王手を急がず、端の歩やと金を育ててみて。」" },
-        { "enemy_id": "ch6_boss_kumanoi", "label": "穴熊城主 熊乃井に挑戦", "description": "固い穴熊を崩し切るボス戦。", "boss": true, "guide_id": "anaguma_break", "reward": { "experience": 600, "currency": 220, "books": ["endgame", "head_gold"] }, "intro": "熊乃井「七つの鍵を待つ必要はない。この城を崩せるなら通ろう。」", "victory": "熊乃井「名人へ至る道を開く。終盤では、一手の意味がさらに重いぞ。」", "loss": "熊乃井「城は逃げない。村の三人から、崩す道具を集めるとよい。」" }
+        { "enemy_id": "ch6_boss_kumanoi", "label": "穴熊城主 熊乃井に挑戦", "description": "固い穴熊を崩し切るボス戦。", "boss": true, "guide_id": "anaguma_break", "reward": { "experience": 600, "currency": 220, "books": ["endgame", "head_gold"] }, "intro": "熊乃井「三人の守り手を越えてきたか。この城を崩せるなら通ろう。」", "victory": "熊乃井「名人へ至る道を開く。終盤では、一手の意味がさらに重いぞ。」", "loss": "熊乃井「城は逃げない。村の三人から学んだ崩し方をつないでみよ。」" }
       ],
       "chests": [
         { "chest_id": "ch6_chest_wall", "label": "城壁の宝箱", "reward": { "currency": 140, "items": { "hint_ticket": 2 } } }
@@ -299,8 +401,23 @@
       "background_asset": "bg_chapter7",
       "boss_id": "ch7_boss_amagi",
       "guide_books": ["endgame", "head_gold"],
+      "course": {
+        "nodes": [
+          { "node_id": "ch7_start", "type": "start", "label": "名人道の入口", "x": 9, "y": 53 },
+          { "node_id": "ch7_sen_node", "type": "encounter", "enemy_id": "ch7_sen", "x": 34, "y": 53 },
+          { "node_id": "ch7_chest_memory_node", "type": "chest", "chest_id": "ch7_chest_memory", "x": 34, "y": 88 },
+          { "node_id": "ch7_kiyo_node", "type": "encounter", "enemy_id": "ch7_kiyo", "x": 61, "y": 53 },
+          { "node_id": "ch7_boss_amagi_node", "type": "encounter", "enemy_id": "ch7_boss_amagi", "x": 88, "y": 53 }
+        ],
+        "links": [
+          { "from": "ch7_start", "to": "ch7_sen_node", "kind": "main" },
+          { "from": "ch7_sen_node", "to": "ch7_chest_memory_node", "kind": "branch" },
+          { "from": "ch7_sen_node", "to": "ch7_kiyo_node", "kind": "main" },
+          { "from": "ch7_kiyo_node", "to": "ch7_boss_amagi_node", "kind": "main" }
+        ]
+      },
       "intro": [
-        { "speaker": "夜古火姫", "emotion": "normal", "text": "ここまでの全部が、きみの力だよ。村人と復習しても、すぐ名人へ行ってもいい。" },
+        { "speaker": "夜古火姫", "emotion": "normal", "text": "ここまでの全部が、きみの力だよ。二人の門下を越えて、名人への道を開こう。" },
         { "speaker": "夜古火姫", "emotion": "sad", "text": "なんで私っていつもこうなんだろう……最後だと思うと、うまく笑えないや。" },
         { "speaker": "thought", "text": "勝っても負けても、ここまで一緒に来た時間は消えない。" }
       ],
@@ -312,7 +429,7 @@
       "encounters": [
         { "enemy_id": "ch7_sen", "label": "名人門下 センと対局", "description": "序盤から終盤まで方針を切り替える総復習。", "reward": { "experience": 550, "currency": 120 }, "intro": "セン「どの戦法でもいい。選んだ理由を盤上で示してくれ。」", "victory": "セン「序盤の形に縛られず、終盤へつないだな。」", "loss": "セン「得意な定跡書を一冊選んで、もう一度始めよう。」" },
         { "enemy_id": "ch7_kiyo", "label": "名人門下 キヨと対局", "description": "玉の安全度と詰みを競う最終稽古。", "guide_id": "endgame", "reward": { "experience": 650, "currency": 140, "items": { "hint_ticket": 1, "undo_ticket": 1 } }, "intro": "キヨ「最後は一手の速さ。自玉と相手玉、両方の詰みを読もう。」", "victory": "キヨ「攻める一手と受ける一手を、最後まで比べていたね。」", "loss": "キヨ「頭金の講座で、逃げ道と支えの駒を見直してみて。」" },
-        { "enemy_id": "ch7_boss_amagi", "label": "伝説の名人 天城に挑戦", "description": "いつでも挑める最後の一局。勝利するとエンディング。", "boss": true, "reward": { "experience": 1000, "currency": 500 }, "intro": "天城「寄り道の数は棋力を決めない。今ここで選ぶ一手だけを見せてほしい。」", "victory": "天城「見事だ。七つの村で得たものは、君自身の将棋になった。」", "loss": "天城「敗北は終点ではない。必要な村へ戻り、またここへ来なさい。」" }
+        { "enemy_id": "ch7_boss_amagi", "label": "伝説の名人 天城に挑戦", "description": "二人の門下を越えた先に待つ最後の一局。勝利するとエンディング。", "boss": true, "reward": { "experience": 1000, "currency": 500 }, "intro": "天城「寄り道の数は棋力を決めない。今ここで選ぶ一手だけを見せてほしい。」", "victory": "天城「見事だ。七つの村で得たものは、君自身の将棋になった。」", "loss": "天城「敗北は終点ではない。必要な村へ戻り、またここへ来なさい。」" }
       ],
       "chests": [
         { "chest_id": "ch7_chest_memory", "label": "思い出の宝箱", "reward": { "currency": 200, "items": { "thinking_hourglass": 2, "confusion_incense": 1 } } }

@@ -7,7 +7,9 @@ import {
   buildSaveContext,
   buyShopItem,
   claimQuest,
+  courseNodeIsAvailable,
   createProfile,
+  getCourseProgress,
   openChest,
   playerDisplayName,
   questIsReady,
@@ -135,21 +137,80 @@ function renderVillageMap() {
   }).join('')}</div>`;
 }
 
-function renderEncounterCard(encounter) {
-  const won = state.defeated_enemies.includes(encounter.enemy_id);
-  return `<article class="card ${encounter.boss ? 'boss' : ''}">${encounter.boss ? '<span class="badge">BOSS</span>' : ''}<h4>${escapeHtml(encounter.label)}</h4>
-    <p>${escapeHtml(encounter.description)}</p><p class="reward">初回報酬：${escapeHtml(rewardText(encounter.reward))}</p>
-    ${won ? '<p class="done">✓ 勝利済み（再戦報酬：棋貨5）</p>' : ''}
-    <div class="actions">${encounter.guide_id && state.unlocked_books.includes(encounter.guide_id) ? `<button data-book="${encounter.guide_id}">作戦を見る</button>` : ''}<button class="primary" data-encounter="${encounter.enemy_id}">${won ? '再戦する' : '対局する'}</button></div></article>`;
+function courseNodeDetails(node, chapter) {
+  if (node.type === 'start') {
+    return { label: node.label, description: 'ここから冒険を始めます。', icon: '出', boss: false };
+  }
+  if (node.type === 'chest') {
+    const chest = chapter.chests.find((entry) => entry.chest_id === node.chest_id);
+    return {
+      label: chest.label,
+      description: rewardText(chest.reward),
+      icon: '宝',
+      boss: false,
+    };
+  }
+  const encounter = chapter.encounters.find((entry) => entry.enemy_id === node.enemy_id);
+  return {
+    label: encounter.label,
+    description: encounter.description,
+    icon: encounter.boss ? '王' : '戦',
+    boss: Boolean(encounter.boss),
+  };
+}
+
+function renderCourseMap(chapter) {
+  const progress = getCourseProgress(state, chapter);
+  const nodesById = new Map(chapter.course.nodes.map((node) => [node.node_id, node]));
+  const nextNode = progress.nextNodeId ? nodesById.get(progress.nextNodeId) : null;
+  const nextDetails = nextNode ? courseNodeDetails(nextNode, chapter) : null;
+  const lines = chapter.course.links.map((link) => {
+    const from = nodesById.get(link.from);
+    const to = nodesById.get(link.to);
+    const fromState = progress.nodeStates[from.node_id];
+    const toState = progress.nodeStates[to.node_id];
+    const classes = ['course-link', link.kind];
+    if (fromState.cleared) classes.push('open');
+    if (toState.cleared) classes.push('complete');
+    return `<line class="${classes.join(' ')}" x1="${from.x}" y1="${from.y}" x2="${to.x}" y2="${to.y}" vector-effect="non-scaling-stroke" />`;
+  }).join('');
+  const nodes = chapter.course.nodes.map((node) => {
+    const details = courseNodeDetails(node, chapter);
+    const nodeState = progress.nodeStates[node.node_id];
+    const classes = ['course-node', node.type];
+    if (details.boss) classes.push('boss');
+    if (nodeState.cleared) classes.push('cleared');
+    else if (nodeState.unlocked) classes.push('unlocked');
+    else classes.push('locked');
+    if (node.node_id === progress.nextNodeId) classes.push('next');
+    const style = `--course-x:${node.x}%;--course-y:${node.y}%`;
+    if (node.type === 'start') {
+      return `<div class="${classes.join(' ')}" style="${style}"><span class="course-node-icon">${details.icon}</span><span class="course-node-copy"><strong>${escapeHtml(details.label)}</strong><small>出発地点</small></span></div>`;
+    }
+    const openedChest = node.type === 'chest' && nodeState.cleared;
+    const statusText = nodeState.cleared
+      ? node.type === 'chest' ? '回収済み' : '勝利済み・再戦可能'
+      : nodeState.unlocked
+        ? node.type === 'chest' ? '寄り道して開ける' : details.boss ? 'ボスへの道が開いた！' : '対局可能'
+        : '手前の敵に勝つと解禁';
+    const action = node.type === 'encounter'
+      ? `data-encounter="${node.enemy_id}"`
+      : `data-chest="${node.chest_id}"`;
+    return `<button class="${classes.join(' ')}" style="${style}" ${action} ${!nodeState.unlocked || openedChest ? 'disabled' : ''} title="${escapeHtml(details.description)}"><span class="course-node-icon">${details.icon}</span><span class="course-node-copy"><strong>${escapeHtml(details.label)}</strong><small>${escapeHtml(statusText)}</small></span></button>`;
+  }).join('');
+  const markerNode = nodesById.get(progress.markerNodeId);
+  const marker = `<div class="course-party" style="--course-x:${markerNode.x}%;--course-y:${markerNode.y}%" aria-label="${escapeHtml(playerDisplayName(state))}と夜古火姫の本道の進行位置"><span class="party-avatar player" title="${escapeHtml(playerDisplayName(state))}">旅</span><span class="party-avatar yakobi" title="夜古火姫">火</span><span class="party-label">進行位置</span></div>`;
+  return `<section class="course-panel" aria-label="${escapeHtml(chapter.name)}の冒険コース">
+    <div class="course-heading"><div><p class="eyebrow">ADVENTURE COURSE</p><h3>ボスまでの道のり</h3></div><p>${nextDetails ? `次の目的地：${escapeHtml(nextDetails.label)}` : 'この村を踏破しました。何度でも再戦できます。'}</p></div>
+    <p class="course-scroll-hint">左右に動かすとコースの先を見られます。</p>
+    <div class="course-scroll"><div class="course-map"><svg class="course-routes" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">${lines}</svg>${nodes}${marker}</div></div>
+    <div class="course-legend"><span><i class="legend-dot battle"></i>本道（勝利必須）</span><span><i class="legend-dot chest"></i>宝箱（任意）</span><span><i class="legend-dot locked"></i>未解禁</span></div>
+  </section>`;
 }
 
 function renderVillage() {
   const chapter = world.chapters.find((entry) => entry.chapter_id === state.current_location)
     || world.chapters[state.chapter - 1];
-  const chests = (chapter.chests || []).map((chest) => {
-    const opened = state.opened_chests.includes(chest.chest_id);
-    return `<article class="card"><h4>${escapeHtml(chest.label)}</h4><p class="reward">${escapeHtml(rewardText(chest.reward))}</p><div class="actions"><button data-chest="${chest.chest_id}" ${opened ? 'disabled' : ''}>${opened ? '開封済み' : '開ける'}</button></div></article>`;
-  }).join('');
   const quests = (chapter.quests || []).map((quest) => {
     const completed = state.quest_states[quest.quest_id] === 'completed';
     const ready = questIsReady(state, quest);
@@ -161,9 +222,9 @@ function renderVillage() {
   }).join('');
   return `${renderVillageMap()}<section class="hero"><p class="eyebrow">第${chapter.number}章</p><h2>${escapeHtml(chapter.name)}</h2><p class="subtitle">${escapeHtml(chapter.subtitle)}</p></section>
     ${dialogueHtml(chapter.intro)}
-    <div class="section-head"><div><h3>対局場</h3><p>村人戦を飛ばして、ボスへ直接挑戦できます。</p></div></div><div class="grid">${chapter.encounters.map(renderEncounterCard).join('')}</div>
-    <div class="section-head"><div><h3>探索</h3><p>宝箱と頼まれごとは、旅を少し楽にします。</p></div></div><div class="grid">${chests}${quests}</div>
-    <div class="section-head"><div><h3>棋具店</h3><p>対局で使う巻物や札を棋貨で補充できます。</p></div></div><div class="grid">${shop}</div>`;
+    ${renderCourseMap(chapter)}
+    <div class="section-head"><div><h3>村の施設</h3><p>頼まれごとと棋具店は、コースの下からいつでも利用できます。</p></div></div>
+    <div class="facility-grid"><section class="facility"><h3>頼まれごと</h3><div class="grid">${quests}</div></section><section class="facility"><h3>棋具店</h3><div class="grid">${shop}</div></section></div>`;
 }
 
 function itemDescription(item) {
@@ -219,6 +280,15 @@ function render() {
       : activeView === 'recovery' ? renderRecovery() : renderVillage();
   app.innerHTML = `<div class="shell">${renderHeader()}${view}<footer class="footer">対局、ルール判定、セーブはすべてブラウザ内で動作します。</footer></div>`;
   bindEvents();
+  if (activeView === 'village') {
+    requestAnimationFrame(() => {
+      const scroller = app.querySelector('.course-scroll');
+      const target = app.querySelector('.course-node.next') || app.querySelector('.course-party');
+      if (!scroller || !target) return;
+      const targetCenter = target.offsetLeft + target.offsetWidth / 2;
+      scroller.scrollLeft = Math.max(0, targetCenter - scroller.clientWidth / 2);
+    });
+  }
 }
 
 function showBook(bookId) {
@@ -229,11 +299,30 @@ function showBook(bookId) {
 
 async function startEncounter(enemyId) {
   const chapter = world.chapters.find((entry) => entry.encounters.some((item) => item.enemy_id === enemyId));
+  if (!chapter || chapter.number > state.chapter || chapter.chapter_id !== state.current_location) {
+    await modal('まだこの村へ進めません', '<p>解禁済みの村を選び、表示中のコースから対局してください。</p>');
+    return;
+  }
   const encounter = chapter.encounters.find((entry) => entry.enemy_id === enemyId);
+  const courseNode = chapter.course.nodes.find((node) => node.enemy_id === enemyId);
+  if (!courseNodeIsAvailable(state, chapter, courseNode.node_id)) {
+    await modal('まだ先へ進めません', '<p>本道の手前にいる相手へ勝つと、この道が開きます。</p>');
+    return;
+  }
   const firstVictory = !state.defeated_enemies.includes(enemyId);
-  const accepted = await modal(encounter.label, `<p>${escapeHtml(encounter.intro)}</p><p>難易度：${escapeHtml(catalogs.difficulties.find((entry) => entry.difficulty_id === state.difficulty).name)}</p>`, [
-    { label: '戻る', value: false }, { label: '対局開始', value: true, primary: true },
-  ]);
+  const actions = [{ label: '戻る', value: false }];
+  if (encounter.guide_id && state.unlocked_books.includes(encounter.guide_id)) {
+    actions.push({ label: '作戦を見る', value: 'guide' });
+  }
+  actions.push({ label: '対局開始', value: true, primary: true });
+  const reward = firstVictory
+    ? `初回報酬：${rewardText(encounter.reward)}`
+    : `再戦報酬：${world.repeat_victory_currency}${world.currency_name}`;
+  const accepted = await modal(encounter.label, `<p>${escapeHtml(encounter.description)}</p><p>${escapeHtml(encounter.intro)}</p><p class="reward">${escapeHtml(reward)}</p><p>難易度：${escapeHtml(catalogs.difficulties.find((entry) => entry.difficulty_id === state.difficulty).name)}</p>`, actions);
+  if (accepted === 'guide') {
+    showBook(encounter.guide_id);
+    return;
+  }
   if (!accepted) return;
   const config = {
     matchId: `rpg.${enemyId}.${Date.now()}`,
@@ -272,8 +361,13 @@ function bindEvents() {
     activeView = button.dataset.view;
     render();
   }));
-  app.querySelectorAll('[data-chapter]').forEach((button) => button.addEventListener('click', () => {
-    save({ ...state, current_location: button.dataset.chapter });
+  app.querySelectorAll('[data-chapter]').forEach((button) => button.addEventListener('click', async () => {
+    const chapter = world.chapters.find((entry) => entry.chapter_id === button.dataset.chapter);
+    if (!chapter || chapter.number > state.chapter) {
+      await modal('まだこの村へ進めません', '<p>手前の村のボスに勝つと道が開きます。</p>');
+      return;
+    }
+    save({ ...state, current_location: chapter.chapter_id });
     activeView = 'village';
     render();
   }));
@@ -281,7 +375,20 @@ function bindEvents() {
   app.querySelectorAll('[data-encounter]').forEach((button) => button.addEventListener('click', () => startEncounter(button.dataset.encounter)));
   app.querySelectorAll('[data-chest]').forEach((button) => button.addEventListener('click', async () => {
     const chapter = world.chapters.find((entry) => entry.chapter_id === state.current_location);
+    if (!chapter || chapter.number > state.chapter) {
+      await modal('まだこの村へ進めません', '<p>手前の村のボスに勝つと道が開きます。</p>');
+      return;
+    }
     const chest = chapter.chests.find((entry) => entry.chest_id === button.dataset.chest);
+    if (!chest) {
+      await modal('宝箱を見つけられません', '<p>表示中のコースから宝箱を選んでください。</p>');
+      return;
+    }
+    const courseNode = chapter.course.nodes.find((node) => node.chest_id === chest.chest_id);
+    if (!courseNodeIsAvailable(state, chapter, courseNode.node_id)) {
+      await modal('まだ宝箱へ行けません', '<p>分かれ道の手前にいる相手へ勝つと、この道が開きます。</p>');
+      return;
+    }
     save(openChest(state, chest, progression));
     await modal('宝箱を開けた', `<p>${escapeHtml(rewardText(chest.reward))}を手に入れました。</p>`);
     render();

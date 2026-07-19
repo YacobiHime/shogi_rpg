@@ -6,7 +6,7 @@ import {
   readdirSync,
   rmSync,
 } from 'node:fs';
-import { dirname, extname, join, relative, resolve } from 'node:path';
+import { basename, dirname, extname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -14,6 +14,16 @@ const DIST = join(ROOT, 'dist');
 const BOARD_UI = join(ROOT, 'src', 'board-ui');
 const BOARD_FILE_EXTENSIONS = new Set(['.html', '.js', '.mjs', '.data']);
 const EXCLUDED_BOARD_FILES = new Set(['server.js']);
+const APPROVED_VENDOR_FILES = new Set([
+  'shogi.esm.js',
+  'yaneuraou.data',
+  'yaneuraou.halfkp.noeval.js',
+  'yaneuraou.halfkp.noeval.wasm',
+  'yaneuraou.halfkp.noeval.worker.js',
+  'yaneuraou.js',
+  'yaneuraou.wasm',
+  'yaneuraou.worker.js',
+]);
 
 function copyFile(source, destination) {
   mkdirSync(dirname(destination), { recursive: true });
@@ -53,7 +63,37 @@ function copyBoardUi() {
     copyFile(join(BOARD_UI, entry.name), join(destination, entry.name));
   }
 
-  copyTree(join('src', 'board-ui', 'vendor'), () => true);
+  const vendorSource = join(BOARD_UI, 'vendor');
+  const vendorDestination = join(DIST, 'src', 'board-ui', 'vendor');
+  const unexpected = readdirSync(vendorSource, { withFileTypes: true })
+    .filter((entry) => !entry.name.startsWith('.'))
+    .filter((entry) => !entry.isFile() || !APPROVED_VENDOR_FILES.has(entry.name))
+    .map((entry) => entry.name);
+  if (unexpected.length > 0) {
+    throw new Error(`未承認のvendor資産があります: ${unexpected.join(', ')}`);
+  }
+  for (const fileName of APPROVED_VENDOR_FILES) {
+    const source = join(vendorSource, fileName);
+    if (!existsSync(source)) throw new Error(`本番配布に必要なvendor資産がありません: ${fileName}`);
+    copyFile(source, join(vendorDestination, fileName));
+  }
+}
+
+function copyReferencedNnueAssets() {
+  const enemies = JSON.parse(readFileSync(join(ROOT, 'data', 'enemies.json'), 'utf8'));
+  const referenced = [...new Set(enemies
+    .map((enemy) => enemy.nnue_file)
+    .filter((fileName) => fileName !== null))];
+  for (const fileName of referenced) {
+    if (typeof fileName !== 'string' || basename(fileName) !== fileName || extname(fileName) !== '.bin') {
+      throw new Error(`敵データのNNUEファイル名が不正です: ${String(fileName)}`);
+    }
+    const source = join(ROOT, 'assets', 'nnue', fileName);
+    if (!existsSync(source)) {
+      throw new Error(`敵データが参照するNNUEファイルをassets/nnueへ配置してください: ${fileName}`);
+    }
+    copyFile(source, join(DIST, 'assets', 'nnue', fileName));
+  }
 }
 
 function validateNnueAssets() {
@@ -95,7 +135,11 @@ function build() {
   copyTree(join('src', 'novel'), (file) => ['.html', '.mjs'].includes(extname(file)));
   copyTree(join('src', 'rpg'), (file) => ['.html', '.mjs', '.css'].includes(extname(file)));
   copyTree(join('src', 'save'), (file) => extname(file) === '.mjs');
-  copyTree(join('assets', 'nnue'), (file) => extname(file) === '.bin');
+  copyReferencedNnueAssets();
+  copyFile(
+    join(ROOT, 'assets', 'books', 'standard_book.db'),
+    join(DIST, 'assets', 'books', 'standard_book.db'),
+  );
   copyTree(join('assets', 'characters'), (file) => ['.png', '.webp'].includes(extname(file)));
   copyBoardUi();
   copyFile(join(ROOT, 'LICENSE'), join(DIST, 'LICENSE'));

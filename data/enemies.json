@@ -8,6 +8,7 @@
     "node_limit": 10000,
     "move_rank": { "min": 1, "max": 1 },
     "allowed_openings": ["standard"],
+    "opening_book_id": null,
     "handicap": null,
     "start_sfen_override": null
   },
@@ -20,6 +21,7 @@
     "node_limit": 80,
     "move_rank": { "min": 3, "max": 5 },
     "allowed_openings": ["standard"],
+    "opening_book_id": null,
     "handicap": null,
     "start_sfen_override": null
   },
@@ -32,6 +34,7 @@
     "node_limit": 150,
     "move_rank": { "min": 2, "max": 5 },
     "allowed_openings": ["standard"],
+    "opening_book_id": null,
     "handicap": null,
     "start_sfen_override": null
   },
@@ -44,6 +47,7 @@
     "node_limit": 400,
     "move_rank": { "min": 2, "max": 4 },
     "allowed_openings": ["standard"],
+    "opening_book_id": null,
     "handicap": null,
     "start_sfen_override": null
   },
@@ -56,6 +60,7 @@
     "node_limit": 300,
     "move_rank": { "min": 2, "max": 5 },
     "allowed_openings": ["standard"],
+    "opening_book_id": "white_bogin",
     "handicap": null,
     "start_sfen_override": null
   },
@@ -68,6 +73,7 @@
     "node_limit": 500,
     "move_rank": { "min": 2, "max": 4 },
     "allowed_openings": ["standard"],
+    "opening_book_id": "white_bogin",
     "handicap": null,
     "start_sfen_override": null
   },
@@ -80,6 +86,7 @@
     "node_limit": 1000,
     "move_rank": { "min": 2, "max": 3 },
     "allowed_openings": ["standard"],
+    "opening_book_id": "white_bogin",
     "handicap": null,
     "start_sfen_override": null
   },
@@ -92,18 +99,20 @@
     "node_limit": 800,
     "move_rank": { "min": 2, "max": 4 },
     "allowed_openings": ["standard"],
+    "opening_book_id": "white_shiken_mino",
     "handicap": null,
     "start_sfen_override": null
   },
   {
     "enemy_id": "ch3_shiro",
-    "name": "居飛車のシロウ",
+    "name": "相振りのシロウ",
     "chapter": 3,
     "nnue_file": null,
     "max_think_time_ms": 4500,
     "node_limit": 1200,
     "move_rank": { "min": 2, "max": 4 },
     "allowed_openings": ["standard"],
+    "opening_book_id": "white_shiken_mino",
     "handicap": null,
     "start_sfen_override": null
   },
@@ -116,6 +125,7 @@
     "node_limit": 2000,
     "move_rank": { "min": 1, "max": 4 },
     "allowed_openings": ["standard"],
+    "opening_book_id": "white_shiken_mino",
     "handicap": null,
     "start_sfen_override": null
   },
@@ -128,6 +138,7 @@
     "node_limit": 3500,
     "move_rank": { "min": 1, "max": 3 },
     "allowed_openings": ["standard"],
+    "opening_book_id": "white_shiken_mino",
     "handicap": null,
     "start_sfen_override": null
   },
@@ -140,6 +151,7 @@
     "node_limit": 2500,
     "move_rank": { "min": 1, "max": 4 },
     "allowed_openings": ["standard"],
+    "opening_book_id": "white_closed_shiken",
     "handicap": null,
     "start_sfen_override": null
   },
@@ -152,6 +164,7 @@
     "node_limit": 3500,
     "move_rank": { "min": 1, "max": 3 },
     "allowed_openings": ["standard"],
+    "opening_book_id": "white_closed_shiken",
     "handicap": null,
     "start_sfen_override": null
   },
@@ -164,6 +177,7 @@
     "node_limit": 5000,
     "move_rank": { "min": 1, "max": 3 },
     "allowed_openings": ["standard"],
+    "opening_book_id": "white_closed_shiken",
     "handicap": null,
     "start_sfen_override": null
   },
@@ -176,6 +190,7 @@
     "node_limit": 8000,
     "move_rank": { "min": 1, "max": 2 },
     "allowed_openings": ["standard"],
+    "opening_book_id": "white_closed_shiken",
     "handicap": null,
     "start_sfen_override": null
   },
@@ -188,6 +203,7 @@
     "node_limit": 6000,
     "move_rank": { "min": 1, "max": 3 },
     "allowed_openings": ["standard"],
+    "opening_book_id": "white_kakugawari",
     "handicap": null,
     "start_sfen_override": null
   },
@@ -200,6 +216,7 @@
     "node_limit": 9000,
     "move_rank": { "min": 1, "max": 3 },
     "allowed_openings": ["standard"],
+    "opening_book_id": "white_yokofudori",
     "handicap": null,
     "start_sfen_override": null
   },
@@ -212,6 +229,7 @@
     "node_limit": 12000,
     "move_rank": { "min": 1, "max": 2 },
     "allowed_openings": ["standard"],
+    "opening_book_id": "white_aigakari",
     "handicap": null,
     "start_sfen_override": null
   },
@@ -224,6 +242,7 @@
     "node_limit": 18000,
     "move_rank": { "min": 1, "max": 2 },
     "allowed_openings": ["standard"],
+    "opening_book_id": "white_ibisha",
     "handicap": null,
     "start_sfen_override": null
   },
@@ -236,6 +255,7 @@
     "node_limit": 12000,
     "move_rank": { "min": 1, "max": 2 },
     "allowed_openings": ["standard"],
+    "opening_book_id": "white_shiken_anaguma",
     "handicap": null,
     "start_sfen_override": null
   },
@@ -248,6 +268,7 @@
     "node_limit": 18000,
     "move_rank": { "min": 1, "max": 2 },
     "allowed_openings": ["standard"],
+    "opening_book_id": "white_shiken_anaguma",
     "handicap": null,
     "start_sfen_override": null
   },
@@ -260,6 +281,7 @@
     "node_limit": 25000,
     "move_rank": { "min": 1, "max": 2 },
     "allowed_openings": ["standard"],
+    "opening_book_id": "white_shiken_anaguma",
     "handicap": null,
     "start_sfen_override": null
   },
@@ -272,6 +294,7 @@
     "node_limit": 40000,
     "move_rank": { "min": 1, "max": 1 },
     "allowed_openings": ["standard"],
+    "opening_book_id": "white_shiken_anaguma",
     "handicap": null,
     "start_sfen_override": null
   },
@@ -284,6 +307,7 @@
     "node_limit": 30000,
     "move_rank": { "min": 1, "max": 2 },
     "allowed_openings": ["standard"],
+    "opening_book_id": null,
     "handicap": null,
     "start_sfen_override": null
   },
@@ -296,6 +320,7 @@
     "node_limit": 50000,
     "move_rank": { "min": 1, "max": 1 },
     "allowed_openings": ["standard"],
+    "opening_book_id": null,
     "handicap": null,
     "start_sfen_override": null
   },
@@ -308,6 +333,7 @@
     "node_limit": 100000,
     "move_rank": { "min": 1, "max": 1 },
     "allowed_openings": ["standard"],
+    "opening_book_id": null,
     "handicap": null,
     "start_sfen_override": null
   }

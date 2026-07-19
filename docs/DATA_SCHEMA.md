@@ -22,7 +22,8 @@ nav_order: 5
   "max_think_time_ms": 10000,         // positive integer, 最大思考時間（安全上限）
   "node_limit": 10000,                // positive integer, 強さの基準となる探索ノード数上限
   "move_rank": { "min": 1, "max": 1 },// 候補手のうち何番目から選択するか（1=最善手のみ）
-  "allowed_openings": ["yagura"],     // string[], 使用可能な戦形ID（formations.jsonのformation_idを参照）
+  "allowed_openings": ["standard"],   // string[], プレイヤーが選べるformation_id
+  "opening_book_id": "white_bogin",  // string | null, enemy_openings.jsonのbook_id
   "handicap": null,                   // string | null, 駒落ち設定（例: "kaku_ochi"）
   "start_sfen_override": null         // string | null, 戦形以外で開始局面を直接指定したい場合
 }
@@ -35,6 +36,48 @@ nav_order: 5
   フォールバックする
 - 評価関数は使用するWASMエンジンとNNUEアーキテクチャが一致し、再配布条件を確認済みのものに限る。
   素材追加時は`docs/ASSETS_CREDITS.md`も更新する
+- `opening_book_id`は`data/enemy_openings.json`に存在するIDだけを許可する。`null`の一般敵は
+  やねうら王の標準定跡DBを使用し、IDを持つ村固有敵は敵専用定跡を優先する
+
+### 1.1 敵専用定跡（`data/enemy_openings.json`）
+
+後手側の戦法・囲いを村ごとに固定する小規模な定跡マスタ。ルートは`version`と`books`を持つ。
+
+```jsonc
+{
+  "version": 1,
+  "books": [
+    {
+      "book_id": "white_closed_shiken", // string, 一意
+      "name": "後手角道を止める四間飛車",
+      "side": "white",                  // 現行はwhiteのみ
+      "steps": [
+        { "moves": ["3c3d"] },          // 同じstep内は合法な代替候補
+        { "moves": ["4c4d"] },
+        { "moves": ["8b4b"] }
+      ],
+      "completion": [
+        { "square": "4b", "piece": "R" },
+        { "square": "4d", "piece": "P" }
+      ],
+      "constraints": {
+        "rook_files": [1, 2, 3, 4],
+        "activate_after_move": "8b4b"
+      }
+    }
+  ]
+}
+```
+
+- `book_id`は小文字英数字と`_`で構成し、`name`は表示用の空でない文字列とする
+- `steps`は1件以上。各`moves`はUSI形式の着手を1件以上持ち、敵の実着手を先頭から順に照合する。
+  棒銀の歩と銀の`8c8d`のように、同じUSI表記が別stepへ再登場しても順序を保って処理する
+- `completion`は完成形に必要な後手駒を`square`と`piece`で示す。`square`は`1a`〜`9i`、
+  `piece`は`P | L | N | S | G | B | R | K`。同じマスを重複指定しない
+- `constraints`は省略可能。`rook_files`は飛車・竜の移動先と飛車打ちを許可する筋、
+  `activate_after_move`は制約を開始する定跡手で、必ずいずれかのstepへ含める
+- 次のstepに合法手がなければ通常探索へフォールバックする。制約の開始後は、通常探索でも
+  現局面の全合法手から制約違反を除いた`searchmoves`を使い、四間飛車を居飛車へ戻さない
 
 ## 2. 戦形（囲い）データ（`data/formations.json`）
 
@@ -304,8 +347,13 @@ repetition | perpetual_check`、`move_count`は0以上の整数とする。
 "isready"
 "setoption name Threads value 1"
 "setoption name EvalFile value rezero_eval.bin"
+"setoption name BookDir value ."
+"setoption name BookFile value user_book1.db"
+"setoption name USI_OwnBook value true"
+"setoption name BookMoves value 40"
 "position sfen <SFEN> moves <指し手...>"
 "go nodes <n>"  // JavaScript側でmax_think_time_ms経過時に"stop"を送る
+"go nodes <n> searchmoves <USI指し手...>" // 敵専用定跡・戦法維持では必ず末尾へ置く
 
 // エンジン → 対局UI（addMessageListenerのコールバック）
 "usiok"
@@ -313,3 +361,46 @@ repetition | perpetual_check`、`move_count`は0以上の整数とする。
 "bestmove <指し手>"
 "info depth ... pv ..." （ヒント表示等に利用）
 ```
+
+標準定跡DBは初期化前にEmscripten仮想FSの`/user_book1.db`へ配置する。利用可能な
+`option name ...`をUSI応答から収集し、エンジンが列挙したオプションだけを設定する。
+村固有の敵では自己定跡が`searchmoves`を迂回しないよう、`USI_OwnBook=false`と
+`BookFile=no_book`を設定してから敵専用定跡を使う。
+
+## 10. 七村RPGワールド（`data/world.json`）
+
+各章は従来の会話、遭遇、宝箱、クエスト、店に加え、マップ表示用の`course`を必須とする。
+
+```jsonc
+{
+  "chapter_id": "chapter2_village",
+  "number": 2,
+  "boss_id": "ch2_boss_ginka",
+  "course": {
+    "nodes": [
+      { "node_id": "ch2_start", "type": "start", "label": "村の入口", "x": 9, "y": 53 },
+      { "node_id": "ch2_ayumu_node", "type": "encounter", "enemy_id": "ch2_ayumu", "x": 34, "y": 53 },
+      { "node_id": "ch2_chest_node", "type": "chest", "chest_id": "ch2_chest_gate", "x": 34, "y": 88 },
+      { "node_id": "ch2_kei_node", "type": "encounter", "enemy_id": "ch2_kei", "x": 61, "y": 53 },
+      { "node_id": "ch2_boss_node", "type": "encounter", "enemy_id": "ch2_boss_ginka", "x": 88, "y": 53 }
+    ],
+    "links": [
+      { "from": "ch2_start", "to": "ch2_ayumu_node", "kind": "main" },
+      { "from": "ch2_ayumu_node", "to": "ch2_chest_node", "kind": "branch" },
+      { "from": "ch2_ayumu_node", "to": "ch2_kei_node", "kind": "main" },
+      { "from": "ch2_kei_node", "to": "ch2_boss_node", "kind": "main" }
+    ]
+  }
+}
+```
+
+- `node_id`は全章で一意。`type`は`start | encounter | chest`、`x` / `y`は0〜100の数値
+- 入口は章ごとに1件だけ置く。遭遇は同章の`encounters[].enemy_id`、宝箱は同章の
+  `chests[].chest_id`を参照し、全件を重複なく配置する
+- `kind: "main"`は入口から全遭遇を一列につなぎ、末尾を`boss_id`にする。
+  `kind: "branch"`は入口または遭遇地点から宝箱へつなぐ。宝箱からはリンクを出さない
+- 入口以外の入リンクは1本、全地点は入口から到達可能、循環と本道分岐は禁止する
+- 本道は先頭から連続してクリアしたprefixだけを順に解放する。後方の撃破記録だけでは
+  未勝利地点を飛ばせない。branchは接続元のクリア後に解放し、宝箱の未開封はボス解放を妨げない
+- 旧セーブでボス撃破済みなら、ボス地点と次章解放を維持する。起動時は全章の
+  `boss_id`と`defeated_enemies`を照合して不足する章解放だけを復旧し、通常敵の撃破は補完しない

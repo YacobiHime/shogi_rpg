@@ -14,6 +14,9 @@ test('七村RPGの主要画面と対局導線を本編入口へ接続する', as
   assert.match(main, /loadMatchSetupOptions/);
   assert.match(main, /openMatchFrame/);
   assert.match(main, /applyEncounterVictory/);
+  assert.match(main, /getCourseProgress/);
+  assert.match(main, /renderCourseMap/);
+  assert.match(main, /course-party/);
   assert.match(main, /data-chest/);
   assert.match(main, /data-quest/);
   assert.match(main, /data-buy/);

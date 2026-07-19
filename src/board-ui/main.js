@@ -6,15 +6,16 @@
  * 対局を成立させるゲームループ。RPGマスタとM3セーブ状態を対局条件へ反映する。
  */
 
-import { ShogiEngine } from '../engine/engine.js';
+import { ShogiEngine } from '../engine/engine.js?v=opening-book-fs-1';
 // クエリを更新すると、展示端末に残った旧版の盤面描画コードを確実に置き換えられる。
-import { BoardView, Color } from './board.js?v=enemy-move-highlights-1';
+import { BoardView, Color } from './board.js?v=adventure-cell-hitbox-1';
 import {
   calculateEffectiveNodeLimit,
   varyNodeLimit,
 } from './difficulty.mjs';
 import { evaluateEnteringKingDeclaration } from './entering-king.mjs';
 import { findNewFormationCallouts } from './formation-callouts.mjs';
+import { getEnemyOpeningDecision } from './enemy-opening-books.mjs';
 import { loadEngineFactories } from './engine-loader.mjs';
 import { getNodeDebuffMultiplier } from './items.mjs';
 import { applyAssistLimitUpgrades } from './level-unlocks.mjs';
@@ -32,6 +33,10 @@ import { RepetitionTracker } from './repetition.mjs';
 import { decodeSaveCode, encodeSaveCode, formatSaveCode } from '../save/save-code.mjs';
 import { normalizeSaveState, recordDefeatedBoss } from '../save/save-state.mjs';
 import { loadSaveState, saveSaveState } from '../save/save-storage.mjs';
+
+const STANDARD_BOOK_PATH = '../../assets/books/standard_book.db';
+const STANDARD_BOOK_VIRTUAL_PATH = '/user_book1.db';
+const STANDARD_BOOK_MAX_MOVES = 40;
 
 const statusEl = document.getElementById('status');
 const resignButton = document.getElementById('resign-button');
@@ -298,7 +303,7 @@ async function main() {
   if (playerSave.difficulty !== difficultyId) {
     playerSave = persistPlayerSave({ ...playerSave, difficulty: difficultyId });
   }
-  const { formation, enemy, difficulty, equippedItem, unlockState } =
+  const { formation, enemy, openingBook, difficulty, equippedItem, unlockState } =
     resolveMatchSelection(options, {
       formationId,
       enemyId,
@@ -350,6 +355,9 @@ async function main() {
     console.warn(`NNUE ${path} を使用できないため内蔵評価関数を使用します`, error);
     setLoading('NNUEエンジンを使用できないため、内蔵評価関数を使用します...');
   };
+  const handleBookFallback = ({ path, error }) => {
+    console.warn(`定跡DB ${path} を使用できないため、探索だけで対局を続けます`, error);
+  };
   const engineFactories = await loadEngineFactories(nnuePath, {
     onFallback: handleNnueFallback,
   });
@@ -357,15 +365,32 @@ async function main() {
     factory: engineFactories.factory,
     fallbackFactory: engineFactories.fallbackFactory,
     nnuePath: engineFactories.useNnue ? nnuePath : null,
+    bookPath: STANDARD_BOOK_PATH,
+    bookVirtualPath: STANDARD_BOOK_VIRTUAL_PATH,
     onNnueFallback: handleNnueFallback,
+    onBookFallback: handleBookFallback,
   });
 
   await engine.init();
+  const standardBookEnabled = engine.enablePreloadedBook();
+  if (standardBookEnabled) {
+    engine.setOption('BookMoves', STANDARD_BOOK_MAX_MOVES);
+    engine.setOption('BookIgnoreRate', 0);
+    // YaneuraOuの自己定跡はsearchmovesより先に着手を決めるため、村固有の
+    // 戦法がある対局では敵専用定跡マスタを優先する。囲い完成後も再び
+    // 居飛車へ戻る手を選ばせないよう、この対局中は自己定跡を再開しない。
+    if (openingBook) engine.disableOwnBook();
+  } else {
+    engine.disableOwnBook();
+  }
+  const bookLabel = openingBook
+    ? '／戦法定跡DB'
+    : (standardBookEnabled ? '／標準定跡DB' : '');
   engine.applyStrengthOptions({ multiPv: effectiveMoveRank.max });
   // GUI側の宣言条件（先手28点・後手27点）とエンジン側を一致させる。
   engine.send('setoption name EnteringKingRule value CSARule27');
   setStatus('エンジン初期化完了。isready送信中...');
-  setLoading('評価関数を解析中...');
+  setLoading('評価関数と定跡を解析中...');
   await engine.ready();
   engine.newGame();
   loadingOverlay.hidden = true;
@@ -585,10 +610,20 @@ async function main() {
     setStatus('エンジン思考中...');
     const moves = moveHistory.length ? ' moves ' + moveHistory.join(' ') : '';
     engine.setPosition((enemy.start_sfen_override || formation.start_sfen) + moves);
-
+    const openingDecision = getEnemyOpeningDecision(
+      openingBook, board.toSfen(), moveHistory
+    );
+    if (openingDecision.status === 'active') {
+      setStatus(`${enemy.name}が${openingBook.name}を組んでいます...`);
+    } else if (openingDecision.status === 'constrained') {
+      setStatus(`${enemy.name}が${openingBook.name}の形を保っています...`);
+    }
     const searchResult = await engine.go({
       nodes: varyNodeLimit(effectiveNodeLimit, difficulty.node_limit_stddev_ratio),
       maxTimeMs: enemy.max_think_time_ms,
+      searchMoves: ['active', 'constrained'].includes(openingDecision.status)
+        ? openingDecision.moves
+        : undefined,
     });
     const { move } = selectMoveByRank(searchResult, effectiveMoveRank);
 
@@ -639,13 +674,13 @@ async function main() {
     updateDeclareWinButton();
     updateAssistButtons();
     const skillLabel = equippedItem ? `／${equippedItem.name}` : '';
-    setStatus(`${enemy.name}／${formation.name}／${difficulty.name}${skillLabel}：あなたの番です`);
+    setStatus(`${enemy.name}／${formation.name}／${difficulty.name}${skillLabel}${bookLabel}：あなたの番です`);
   }
 
   updateDeclareWinButton();
   updateAssistButtons();
   const skillLabel = equippedItem ? `／${equippedItem.name}` : '';
-  setStatus(`${enemy.name}／${formation.name}／${difficulty.name}${skillLabel}：あなたの番です（先手）`);
+  setStatus(`${enemy.name}／${formation.name}／${difficulty.name}${skillLabel}${bookLabel}：あなたの番です（先手）`);
 }
 
 main().catch((e) => {

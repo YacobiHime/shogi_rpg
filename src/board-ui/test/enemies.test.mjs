@@ -6,13 +6,16 @@ import { loadEnemy, validateEnemies } from '../enemies.mjs';
 
 const enemiesUrl = new URL('../../../data/enemies.json', import.meta.url);
 const formationsUrl = new URL('../../../data/formations.json', import.meta.url);
+const openingBooksUrl = new URL('../../../data/enemy_openings.json', import.meta.url);
 
 async function readJson(url) {
   return JSON.parse(await readFile(url, 'utf8'));
 }
 
 function masterFetch(url) {
-  const source = url.endsWith('enemies.json') ? enemiesUrl : formationsUrl;
+  const source = url.endsWith('enemies.json')
+    ? enemiesUrl
+    : (url.endsWith('formations.json') ? formationsUrl : openingBooksUrl);
   return Promise.resolve({ ok: true, json: () => readJson(source) });
 }
 
@@ -23,6 +26,7 @@ test('enemies.jsonの稽古相手を読み込める', async () => {
   assert.equal(enemy.node_limit, 10000);
   assert.equal(enemy.max_think_time_ms, 10000);
   assert.equal(enemy.nnue_file, null);
+  assert.equal(enemy.opening_book_id, null);
 });
 
 test('ノード上限は1以上の整数を必須とする', async () => {
@@ -45,6 +49,17 @@ test('未定義の戦形参照を拒否する', async () => {
   assert.throws(
     () => validateEnemies([{ ...enemy, allowed_openings: ['missing'] }], ['standard']),
     /未定義/
+  );
+});
+
+test('未定義の敵定跡参照を拒否する', async () => {
+  const [enemy] = await readJson(enemiesUrl);
+
+  assert.throws(
+    () => validateEnemies(
+      [{ ...enemy, opening_book_id: 'missing' }], ['standard'], ['white_bogin']
+    ),
+    /未定義の敵定跡/,
   );
 });
 

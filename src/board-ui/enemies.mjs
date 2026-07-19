@@ -1,4 +1,5 @@
 import { validateFormations } from './formations.mjs';
+import { validateEnemyOpeningBooks } from './enemy-opening-books.mjs';
 
 const REQUIRED_FIELDS = [
   'enemy_id',
@@ -9,6 +10,7 @@ const REQUIRED_FIELDS = [
   'node_limit',
   'move_rank',
   'allowed_openings',
+  'opening_book_id',
   'handicap',
   'start_sfen_override',
 ];
@@ -39,14 +41,16 @@ function validateSfen(sfen, field, index) {
  * enemies.jsonの内容を検証して返す。
  * @param {unknown} data
  * @param {Iterable<string>} [formationIds]
+ * @param {Iterable<string>} [openingBookIds]
  */
-export function validateEnemies(data, formationIds) {
+export function validateEnemies(data, formationIds, openingBookIds) {
   if (!Array.isArray(data) || data.length === 0) {
     throw new Error('enemies.jsonは1件以上の敵を含む配列にしてください');
   }
 
   const ids = new Set();
   const validFormationIds = formationIds ? new Set(formationIds) : null;
+  const validOpeningBookIds = openingBookIds ? new Set(openingBookIds) : null;
 
   for (const [index, enemy] of data.entries()) {
     if (!enemy || typeof enemy !== 'object' || Array.isArray(enemy)) {
@@ -66,6 +70,7 @@ export function validateEnemies(data, formationIds) {
       throw new Error(`敵データ[${index}].nnue_fileにはディレクトリを含めないでください`);
     }
     assertNullableString(enemy.handicap, 'handicap', index);
+    assertNullableString(enemy.opening_book_id, 'opening_book_id', index);
     assertNullableString(enemy.start_sfen_override, 'start_sfen_override', index);
     validateSfen(enemy.start_sfen_override, 'start_sfen_override', index);
 
@@ -101,6 +106,10 @@ export function validateEnemies(data, formationIds) {
         }
       }
     }
+    if (validOpeningBookIds && enemy.opening_book_id !== null
+      && !validOpeningBookIds.has(enemy.opening_book_id)) {
+      throw new Error(`${enemy.enemy_id}が未定義の敵定跡を参照しています: ${enemy.opening_book_id}`);
+    }
   }
 
   return data;
@@ -109,15 +118,17 @@ export function validateEnemies(data, formationIds) {
 /**
  * 敵マスタと戦形マスタを取得・検証し、指定IDの敵を返す。
  * @param {string} enemyId
- * @param {{ fetchImpl?: typeof fetch, url?: string, formationsUrl?: string }} [options]
+ * @param {{ fetchImpl?: typeof fetch, url?: string, formationsUrl?: string, openingBooksUrl?: string }} [options]
  */
 export async function loadEnemy(enemyId, options = {}) {
   const fetchImpl = options.fetchImpl || fetch;
   const url = options.url || '../../data/enemies.json';
   const formationsUrl = options.formationsUrl || '../../data/formations.json';
-  const [enemyResponse, formationResponse] = await Promise.all([
+  const openingBooksUrl = options.openingBooksUrl || '../../data/enemy_openings.json';
+  const [enemyResponse, formationResponse, openingBooksResponse] = await Promise.all([
     fetchImpl(url),
     fetchImpl(formationsUrl),
+    fetchImpl(openingBooksUrl),
   ]);
 
   if (!enemyResponse.ok) {
@@ -126,11 +137,16 @@ export async function loadEnemy(enemyId, options = {}) {
   if (!formationResponse.ok) {
     throw new Error(`戦形データを取得できませんでした（HTTP ${formationResponse.status}）`);
   }
+  if (!openingBooksResponse.ok) {
+    throw new Error(`敵定跡データを取得できませんでした（HTTP ${openingBooksResponse.status}）`);
+  }
 
   const formations = validateFormations(await formationResponse.json());
+  const openingBooks = validateEnemyOpeningBooks(await openingBooksResponse.json()).books;
   const enemies = validateEnemies(
     await enemyResponse.json(),
-    formations.map((formation) => formation.formation_id)
+    formations.map((formation) => formation.formation_id),
+    openingBooks.map((book) => book.book_id),
   );
   const enemy = enemies.find((item) => item.enemy_id === enemyId);
   if (!enemy) {
