@@ -1,7 +1,14 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { formatHintMove, getHintMove, getHintMoves, TurnHistory } from '../match-assists.mjs';
+import {
+  formatHintEvaluation,
+  formatHintMove,
+  formatHintPrincipalVariation,
+  getHintMove,
+  getHintMoves,
+  TurnHistory,
+} from '../match-assists.mjs';
 
 const START_SFEN = 'lnsgkgsnl/1r5b1/ppppppppp/9/9/9/PPPPPPPPP/1B5R1/LNSGKGSNL b - 1';
 
@@ -32,6 +39,19 @@ test('上位3候補を順位順にヒントとして取得する', () => {
 test('MultiPVがない場合はbestmoveをヒントにする', () => {
   assert.equal(getHintMove({ move: '7g7f', candidates: [] }), '7g7f');
   assert.throws(() => getHintMove({ candidates: [] }), /取得できません/);
+});
+
+test('評価値を駒得単位と詰み手数で表示する', () => {
+  assert.equal(formatHintEvaluation({ type: 'cp', value: 123 }), '評価値 +1.23');
+  assert.equal(formatHintEvaluation({ type: 'cp', value: -45 }), '評価値 -0.45');
+  assert.equal(formatHintEvaluation({ type: 'mate', value: 7 }), '評価値 詰み7手');
+  assert.equal(formatHintEvaluation({ type: 'mate', value: -3 }), '評価値 被詰み3手');
+});
+
+test('読み筋を局面へ順に適用して6手先まで日本語表示する', () => {
+  assert.equal(formatHintPrincipalVariation([
+    '7g7f', '3c3d', '2g2f', '8c8d', '2f2e', '8d8e', '6g6f',
+  ], START_SFEN), '7六歩 → 3四歩 → 2六歩 → 8四歩 → 2五歩 → 8五歩');
 });
 
 test('待ったで直前のプレイヤー手番へ戻る', () => {

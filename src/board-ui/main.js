@@ -6,7 +6,7 @@
  * 対局を成立させるゲームループ。RPGマスタとM3セーブ状態を対局条件へ反映する。
  */
 
-import { ShogiEngine } from '../engine/engine.js?v=opening-book-fs-1';
+import { ShogiEngine } from '../engine/engine.js?v=live-hint-pv-1';
 // クエリを更新すると、展示端末に残った旧版の盤面描画コードを確実に置き換えられる。
 import { BoardView, Color } from './board.js?v=adventure-cell-hitbox-1';
 import {
@@ -26,7 +26,13 @@ import {
   resolveMatchSelection,
 } from './match-setup.mjs';
 import { calculateEffectiveMoveRank, selectMoveByRank } from './move-selection.mjs';
-import { formatHintMove, getHintMoves, TurnHistory } from './match-assists.mjs';
+import {
+  formatHintEvaluation,
+  formatHintMove,
+  formatHintPrincipalVariation,
+  getHintMoves,
+  TurnHistory,
+} from './match-assists.mjs';
 import { resolveNnuePath } from './nnue.mjs';
 import { createNovelResultReporter } from './novel-bridge.mjs';
 import { RepetitionTracker } from './repetition.mjs';
@@ -37,9 +43,8 @@ import { loadSaveState, saveSaveState } from '../save/save-storage.mjs';
 const STANDARD_BOOK_PATH = '../../assets/books/standard_book.db';
 const STANDARD_BOOK_VIRTUAL_PATH = '/user_book1.db';
 const STANDARD_BOOK_MAX_MOVES = 40;
-const HINT_NODE_LIMIT = 50_000;
-const HINT_MAX_TIME_MS = 3_000;
 const HINT_MULTI_PV = 3;
+const HINT_PV_MOVE_LIMIT = 6;
 
 const statusEl = document.getElementById('status');
 const resignButton = document.getElementById('resign-button');
@@ -405,6 +410,7 @@ async function main() {
   const announcedFormationIds = new Set();
   let gameOver = false;
   let engineBusy = false;
+  let hintAnalyzing = false;
   let hintsUsed = 0;
   let undoUsed = 0;
   const repetitionTracker = new RepetitionTracker(board.toSfen());
@@ -413,6 +419,18 @@ async function main() {
     moveHistoryLength: 0,
     repetitionLength: repetitionTracker.length,
   });
+
+  function hintCandidateLines(candidate, currentSfen) {
+    const labels = new Map([[1, '最善手'], [2, '次善手'], [3, '3番手']]);
+    const lines = [
+      `${labels.get(candidate.rank) || `${candidate.rank}番手`}：${formatHintMove(candidate.move, currentSfen)}　${formatHintEvaluation(candidate.score)}`,
+    ];
+    const variation = formatHintPrincipalVariation(
+      candidate.pv || [candidate.move], currentSfen, HINT_PV_MOVE_LIMIT
+    );
+    if (variation) lines.push(`　読み筋：${variation}`);
+    return lines;
+  }
 
   function setYakobihimeSpeech(text, animate = false) {
     yakobihimeSpeech.textContent = text;
@@ -455,9 +473,13 @@ async function main() {
     const humanTurn = board.isHumanTurn();
     const hintsRemaining = Math.max(0, assistLimits.hints - hintsUsed);
     const undoRemaining = Math.max(0, assistLimits.undo - undoUsed);
-    hintButton.textContent = `ヒント（残り${hintsRemaining}）`;
+    hintButton.textContent = hintAnalyzing
+      ? '解析を止める'
+      : `ヒント（残り${hintsRemaining}）`;
     undoButton.textContent = `待った（残り${undoRemaining}）`;
-    hintButton.disabled = gameOver || engineBusy || !humanTurn || hintsRemaining === 0;
+    hintButton.disabled = hintAnalyzing
+      ? false
+      : gameOver || engineBusy || !humanTurn || hintsRemaining === 0;
     undoButton.disabled = gameOver || engineBusy || !humanTurn
       || undoRemaining === 0 || !turnHistory.canUndo();
   }
@@ -522,13 +544,22 @@ async function main() {
   });
 
   hintButton.addEventListener('click', async () => {
+    if (hintAnalyzing) {
+      hintButton.textContent = '停止中...';
+      hintButton.disabled = true;
+      engine.stop();
+      return;
+    }
     if (gameOver || engineBusy || !board.isHumanTurn()
       || hintsUsed >= assistLimits.hints) return;
     engineBusy = true;
-    hintMessageEl.textContent = '読み筋を計算中...';
+    hintAnalyzing = true;
+    hintMessageEl.textContent = '解析を開始しています...\nもう一度押すと停止します。';
     updateAssistButtons();
     updateDeclareWinButton();
     const restoreStandardBook = standardBookEnabled && !openingBook;
+    let latestUpdate = null;
+    let renderFrame = null;
     try {
       const moves = moveHistory.length ? ' moves ' + moveHistory.join(' ') : '';
       const currentSfen = board.toSfen();
@@ -536,10 +567,29 @@ async function main() {
       if (restoreStandardBook) engine.disableOwnBook();
       engine.setPosition((enemy.start_sfen_override || formation.start_sfen) + moves);
       const searchResult = await engine.go({
-        nodes: HINT_NODE_LIMIT,
-        maxTimeMs: HINT_MAX_TIME_MS,
+        infinite: true,
+        onUpdate: (update) => {
+          latestUpdate = update;
+          if (renderFrame !== null) return;
+          renderFrame = requestAnimationFrame(() => {
+            renderFrame = null;
+            if (!hintAnalyzing) return;
+            const depth = latestUpdate.depth ? `深さ ${latestUpdate.depth}` : '深さ —';
+            const nodes = Number.isFinite(latestUpdate.nodes)
+              ? `${latestUpdate.nodes.toLocaleString('ja-JP')}局面`
+              : '局面数 —';
+            hintMessageEl.textContent = [
+              `解析中（${depth}／${nodes}）`,
+              ...latestUpdate.candidates.slice(0, HINT_MULTI_PV)
+                .flatMap((candidate) => hintCandidateLines(candidate, currentSfen)),
+              'もう一度押すと停止します。',
+            ].join('\n');
+          });
+        },
       });
       const hintMoves = getHintMoves(searchResult, HINT_MULTI_PV);
+      hintAnalyzing = false;
+      if (renderFrame !== null) cancelAnimationFrame(renderFrame);
       hintsUsed += 1;
       if ((playerSave.item_counts.hint_ticket || 0) > 0) {
         playerSave = persistPlayerSave({
@@ -550,20 +600,37 @@ async function main() {
           },
         });
       }
-      const labels = new Map([[1, '最善手'], [2, '次善手'], [3, '3番手']]);
-      hintMessageEl.textContent = hintMoves
-        .map(({ rank, move }) => `${labels.get(rank) || `${rank}番手`}：${formatHintMove(move, currentSfen)}`)
-        .join('\n');
+      const detailByRank = new Map(
+        (latestUpdate?.candidates || []).map((candidate) => [candidate.rank, candidate])
+      );
+      const stats = latestUpdate
+        ? `（深さ ${latestUpdate.depth || '—'}／${Number.isFinite(latestUpdate.nodes)
+          ? `${latestUpdate.nodes.toLocaleString('ja-JP')}局面` : '局面数 —'}）`
+        : '';
+      hintMessageEl.textContent = [
+        `解析結果${stats}`,
+        ...hintMoves.flatMap(({ rank, move }) => hintCandidateLines({
+          rank,
+          move,
+          ...detailByRank.get(rank),
+        }, currentSfen)),
+      ].join('\n');
     } catch (error) {
       console.error('ヒントの取得に失敗しました', error);
       hintMessageEl.textContent = 'ヒントを取得できませんでした。';
     } finally {
+      hintAnalyzing = false;
+      if (renderFrame !== null) cancelAnimationFrame(renderFrame);
       engine.applyStrengthOptions({ multiPv: effectiveMoveRank.max });
       if (restoreStandardBook) engine.enablePreloadedBook();
       engineBusy = false;
       updateAssistButtons();
       updateDeclareWinButton();
     }
+  });
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden' && hintAnalyzing) engine.stop();
   });
 
   undoButton.addEventListener('click', () => {

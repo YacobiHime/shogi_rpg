@@ -352,6 +352,39 @@ test('MultiPVの各順位について最後に受信した候補手を返す', a
   });
 });
 
+test('無制限探索中の候補手・評価値・深さをリアルタイム通知して停止できる', async () => {
+  const commands = [];
+  const updates = [];
+  const engine = initializedEngine(commands);
+  const resultPromise = engine.go({
+    infinite: true,
+    onUpdate: (update) => updates.push(update),
+  });
+
+  engine._emit('info depth 12 multipv 1 score cp 84 nodes 12345 nps 60000 pv 7g7f 3c3d');
+  engine._emit('info depth 12 multipv 2 score cp 31 nodes 13000 nps 61000 pv 2g2f 8c8d');
+  engine.stop();
+  engine._emit('bestmove 7g7f');
+
+  assert.deepEqual(commands, ['go infinite', 'stop']);
+  assert.deepEqual(updates.at(-1), {
+    depth: 12,
+    nodes: 13000,
+    nps: 61000,
+    candidates: [
+      {
+        rank: 1, move: '7g7f', pv: ['7g7f', '3c3d'], depth: 12,
+        score: { type: 'cp', value: 84 },
+      },
+      {
+        rank: 2, move: '2g2f', pv: ['2g2f', '8c8d'], depth: 12,
+        score: { type: 'cp', value: 31 },
+      },
+    ],
+  });
+  assert.equal((await resultPromise).move, '7g7f');
+});
+
 test('MultiPVへ1未満または整数でない値を設定できない', () => {
   const engine = initializedEngine([]);
   assert.throws(() => engine.applyStrengthOptions({ multiPv: 0 }), /multiPv/);

@@ -213,7 +213,25 @@ export class ShogiEngine {
   /**
    * 思考を開始し、bestmoveを待って返す。
    * nodesを強さの基準とし、maxTimeMsは極端に遅い端末向けの安全上限として使う。
-   * @param {{ movetime?: number, nodes?: number, maxTimeMs?: number, searchMoves?: string[] }} goOptions
+   * @param {{
+   *   movetime?: number,
+   *   nodes?: number,
+   *   infinite?: boolean,
+   *   maxTimeMs?: number,
+   *   searchMoves?: string[],
+   *   onUpdate?: (update: {
+   *     depth?: number,
+   *     nodes?: number,
+   *     nps?: number,
+   *     candidates: {
+   *       rank: number,
+   *       move: string,
+   *       pv: string[],
+   *       depth?: number,
+   *       score?: { type: 'cp' | 'mate', value: number }
+   *     }[]
+   *   }) => void
+   * }} goOptions
    * @returns {Promise<{
    *   move: string,
    *   ponder?: string,
@@ -224,6 +242,7 @@ export class ShogiEngine {
     let cmd = 'go';
     if (goOptions.movetime) cmd += ' movetime ' + goOptions.movetime;
     if (goOptions.nodes) cmd += ' nodes ' + goOptions.nodes;
+    if (goOptions.infinite) cmd += ' infinite';
     if (goOptions.searchMoves !== undefined) {
       if (!Array.isArray(goOptions.searchMoves) || goOptions.searchMoves.length === 0
         || goOptions.searchMoves.some(
@@ -238,15 +257,47 @@ export class ShogiEngine {
 
     return new Promise((resolve) => {
       const candidates = new Map();
+      const candidateDetails = new Map();
+      let latestStats = {};
       const timeoutId = goOptions.maxTimeMs
         ? setTimeout(() => this.send('stop'), goOptions.maxTimeMs)
         : null;
       const listener = (line) => {
         if (line.startsWith('info ')) {
           const rankMatch = line.match(/\bmultipv\s+(\d+)\b/);
-          const moveMatch = line.match(/\bpv\s+(\S+)/);
-          if (rankMatch && moveMatch) {
-            candidates.set(Number(rankMatch[1]), moveMatch[1]);
+          const pvMatch = line.match(/\bpv\s+(.+)$/);
+          const depthMatch = line.match(/\bdepth\s+(\d+)\b/);
+          const nodesMatch = line.match(/\bnodes\s+(\d+)\b/);
+          const npsMatch = line.match(/\bnps\s+(\d+)\b/);
+          const scoreMatch = line.match(/\bscore\s+(cp|mate)\s+([+-]?\d+)\b/);
+          latestStats = {
+            depth: depthMatch ? Number(depthMatch[1]) : latestStats.depth,
+            nodes: nodesMatch ? Number(nodesMatch[1]) : latestStats.nodes,
+            nps: npsMatch ? Number(npsMatch[1]) : latestStats.nps,
+          };
+          if (rankMatch && pvMatch) {
+            const rank = Number(rankMatch[1]);
+            const pv = pvMatch[1].trim().split(/\s+/).filter((move) => USI_MOVE_PATTERN.test(move));
+            if (pv.length === 0) return;
+            const detail = {
+              rank,
+              move: pv[0],
+              pv,
+              depth: depthMatch ? Number(depthMatch[1]) : undefined,
+              score: scoreMatch ? {
+                type: scoreMatch[1],
+                value: Number(scoreMatch[2]),
+              } : undefined,
+            };
+            candidates.set(rank, detail.move);
+            candidateDetails.set(rank, detail);
+            if (typeof goOptions.onUpdate === 'function') {
+              goOptions.onUpdate({
+                ...latestStats,
+                candidates: [...candidateDetails.values()]
+                  .sort((left, right) => left.rank - right.rank),
+              });
+            }
           }
         }
         if (line.startsWith('bestmove')) {
@@ -266,6 +317,11 @@ export class ShogiEngine {
       this.onOutput(listener);
       this.send(cmd);
     });
+  }
+
+  /** 実行中の探索を停止し、bestmoveの応答を待たせる。 */
+  stop() {
+    this.send('stop');
   }
 
   /**
