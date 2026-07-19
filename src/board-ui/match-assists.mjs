@@ -1,26 +1,79 @@
-/** エンジンの探索結果からヒントに使う最善手を取得する。 */
-export function getHintMove(searchResult) {
+import shogiLib from './vendor/shogi.esm.js';
+
+const { Shogi, kindToString } = shogiLib;
+const RANK_KANJI = ['一', '二', '三', '四', '五', '六', '七', '八', '九'];
+const DROP_KINDS = {
+  P: 'FU', L: 'KY', N: 'KE', S: 'GI', G: 'KI', B: 'KA', R: 'HI',
+};
+
+/** エンジンの探索結果から、順位付きのヒント候補を取得する。 */
+export function getHintMoves(searchResult, limit = 3) {
   if (!searchResult || typeof searchResult !== 'object') {
     throw new Error('ヒントの探索結果が不正です');
   }
-  const bestCandidate = Array.isArray(searchResult.candidates)
-    ? searchResult.candidates.find((candidate) => candidate.rank === 1)
-    : null;
-  const move = bestCandidate?.move || searchResult.move;
-  if (typeof move !== 'string' || move.length === 0) {
+  if (!Number.isInteger(limit) || limit < 1) {
+    throw new Error('ヒントの候補数は1以上の整数にしてください');
+  }
+
+  const candidates = Array.isArray(searchResult.candidates)
+    ? searchResult.candidates.filter((candidate) => (
+      Number.isInteger(candidate?.rank)
+      && candidate.rank >= 1
+      && candidate.rank <= limit
+      && typeof candidate.move === 'string'
+      && candidate.move.length > 0
+    ))
+    : [];
+  if (!candidates.some((candidate) => candidate.rank === 1)
+    && typeof searchResult.move === 'string' && searchResult.move.length > 0) {
+    candidates.push({ rank: 1, move: searchResult.move });
+  }
+
+  const seenRanks = new Set();
+  const seenMoves = new Set();
+  const moves = candidates
+    .sort((left, right) => left.rank - right.rank)
+    .filter((candidate) => {
+      if (seenRanks.has(candidate.rank) || seenMoves.has(candidate.move)) return false;
+      seenRanks.add(candidate.rank);
+      seenMoves.add(candidate.move);
+      return true;
+    })
+    .map(({ rank, move }) => ({ rank, move }));
+  if (moves.length === 0) {
     throw new Error('ヒントの指し手を取得できませんでした');
   }
-  return move;
+  return moves;
 }
 
-/** USI形式の指し手を対局画面向けの短い表記にする。 */
-export function formatHintMove(usiMove) {
+/** 従来どおり最善手だけ必要な呼び出し向け。 */
+export function getHintMove(searchResult) {
+  return getHintMoves(searchResult, 1)[0].move;
+}
+
+function formatDestination(square) {
+  const file = square[0];
+  const rank = RANK_KANJI[square.charCodeAt(1) - 'a'.charCodeAt(0)];
+  return `${file}${rank}`;
+}
+
+/** USI形式の指し手を「5二銀」のような日本語表記にする。 */
+export function formatHintMove(usiMove, sfen) {
   if (usiMove === 'resign') return '投了';
   if (usiMove === 'win') return '入玉宣言';
   const drop = usiMove.match(/^([PLNSGBR])\*([1-9][a-i])$/);
-  if (drop) return `${drop[1]}を${drop[2]}へ打つ`;
+  if (drop) return `${formatDestination(drop[2])}${kindToString(DROP_KINDS[drop[1]])}打`;
   const move = usiMove.match(/^([1-9][a-i])([1-9][a-i])(\+)?$/);
-  if (move) return `${move[1]} → ${move[2]}${move[3] ? '（成）' : ''}`;
+  if (move) {
+    if (typeof sfen !== 'string' || sfen.length === 0) {
+      throw new Error('ヒントの駒名を表示するには局面情報が必要です');
+    }
+    const shogi = new Shogi();
+    shogi.initializeFromSFENString(sfen);
+    const piece = shogi.get(Number(move[1][0]), move[1].charCodeAt(1) - 96);
+    if (!piece) throw new Error(`ヒントの移動元に駒がありません: ${move[1]}`);
+    return `${formatDestination(move[2])}${kindToString(piece.kind)}${move[3] ? '成' : ''}`;
+  }
   return usiMove;
 }
 

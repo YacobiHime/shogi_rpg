@@ -26,6 +26,12 @@ test('全81マスに座標付きのクリック領域を用意する', async () 
   assert.match(source, /dataset\.square = this\._squareName\(x, y\)/);
 });
 
+test('盤面座標は列を数字、行を漢数字で表示する', async () => {
+  const source = await readFile(new URL('../board.js', import.meta.url), 'utf8');
+  assert.match(source, /String\(BOARD_SIZE - i\)/);
+  assert.match(source, /\['一', '二', '三', '四', '五', '六', '七', '八', '九'\]/);
+});
+
 test('成駒だけを朱文字表示の対象にする', () => {
   for (const kind of ['TO', 'NY', 'NK', 'NG', 'UM', 'RY']) {
     assert.equal(isPromotedKind(kind), true);

@@ -1,21 +1,32 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { formatHintMove, getHintMove, TurnHistory } from '../match-assists.mjs';
+import { formatHintMove, getHintMove, getHintMoves, TurnHistory } from '../match-assists.mjs';
 
-test('最善候補をヒントとして表示用に整形する', () => {
-  const move = getHintMove({
+const START_SFEN = 'lnsgkgsnl/1r5b1/ppppppppp/9/9/9/PPPPPPPPP/1B5R1/LNSGKGSNL b - 1';
+
+test('上位3候補を順位順にヒントとして取得する', () => {
+  const moves = getHintMoves({
     move: '7g7f',
     candidates: [
-      { rank: 1, move: '2g2f' },
       { rank: 2, move: '7g7f' },
+      { rank: 3, move: '2g2f' },
+      { rank: 1, move: '3i4h' },
+      { rank: 4, move: '9g9f' },
     ],
   });
 
-  assert.equal(move, '2g2f');
-  assert.equal(formatHintMove(move), '2g → 2f');
-  assert.equal(formatHintMove('P*5e'), 'Pを5eへ打つ');
-  assert.equal(formatHintMove('8h2b+'), '8h → 2b（成）');
+  assert.deepEqual(moves, [
+    { rank: 1, move: '3i4h' },
+    { rank: 2, move: '7g7f' },
+    { rank: 3, move: '2g2f' },
+  ]);
+  assert.equal(formatHintMove(moves[0].move, START_SFEN), '4八銀');
+  assert.equal(formatHintMove(
+    '5c5b', '4k4/9/4S4/9/9/9/9/9/4K4 b - 1'
+  ), '5二銀');
+  assert.equal(formatHintMove('P*5e', START_SFEN), '5五歩打');
+  assert.equal(formatHintMove('8h2b+', START_SFEN), '2二角成');
 });
 
 test('MultiPVがない場合はbestmoveをヒントにする', () => {

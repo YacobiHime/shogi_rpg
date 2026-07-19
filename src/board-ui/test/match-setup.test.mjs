@@ -162,3 +162,12 @@ test('標準定跡DBを読み込み、村固有の戦法がある対局では敵
   assert.match(source, /戦法定跡DB/);
   assert.match(source, /openingDecision\.status === 'active'/);
 });
+
+test('ヒントは敵の強さと切り離して上位3手を固定探索する', async () => {
+  const source = await readFile(mainUrl, 'utf8');
+  assert.match(source, /const HINT_NODE_LIMIT = 50_000/);
+  assert.match(source, /const HINT_MAX_TIME_MS = 3_000/);
+  assert.match(source, /const HINT_MULTI_PV = 3/);
+  assert.match(source, /getHintMoves\(searchResult, HINT_MULTI_PV\)/);
+  assert.match(source, /formatHintMove\(move, currentSfen\)/);
+});

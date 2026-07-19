@@ -26,7 +26,7 @@ import {
   resolveMatchSelection,
 } from './match-setup.mjs';
 import { calculateEffectiveMoveRank, selectMoveByRank } from './move-selection.mjs';
-import { formatHintMove, getHintMove, TurnHistory } from './match-assists.mjs';
+import { formatHintMove, getHintMoves, TurnHistory } from './match-assists.mjs';
 import { resolveNnuePath } from './nnue.mjs';
 import { createNovelResultReporter } from './novel-bridge.mjs';
 import { RepetitionTracker } from './repetition.mjs';
@@ -37,6 +37,9 @@ import { loadSaveState, saveSaveState } from '../save/save-storage.mjs';
 const STANDARD_BOOK_PATH = '../../assets/books/standard_book.db';
 const STANDARD_BOOK_VIRTUAL_PATH = '/user_book1.db';
 const STANDARD_BOOK_MAX_MOVES = 40;
+const HINT_NODE_LIMIT = 50_000;
+const HINT_MAX_TIME_MS = 3_000;
+const HINT_MULTI_PV = 3;
 
 const statusEl = document.getElementById('status');
 const resignButton = document.getElementById('resign-button');
@@ -334,10 +337,6 @@ async function main() {
     },
     unlockState
   );
-  const hintNodeLimit = calculateEffectiveNodeLimit(
-    enemy.node_limit,
-    difficulty.node_limit_mult
-  );
   const effectiveNodeLimit = calculateEffectiveNodeLimit(
     enemy.node_limit,
     difficulty.node_limit_mult * nodeDebuffMultiplier
@@ -529,14 +528,18 @@ async function main() {
     hintMessageEl.textContent = '読み筋を計算中...';
     updateAssistButtons();
     updateDeclareWinButton();
+    const restoreStandardBook = standardBookEnabled && !openingBook;
     try {
       const moves = moveHistory.length ? ' moves ' + moveHistory.join(' ') : '';
+      const currentSfen = board.toSfen();
+      engine.applyStrengthOptions({ multiPv: HINT_MULTI_PV });
+      if (restoreStandardBook) engine.disableOwnBook();
       engine.setPosition((enemy.start_sfen_override || formation.start_sfen) + moves);
       const searchResult = await engine.go({
-        nodes: hintNodeLimit,
-        maxTimeMs: enemy.max_think_time_ms,
+        nodes: HINT_NODE_LIMIT,
+        maxTimeMs: HINT_MAX_TIME_MS,
       });
-      const hintMove = getHintMove(searchResult);
+      const hintMoves = getHintMoves(searchResult, HINT_MULTI_PV);
       hintsUsed += 1;
       if ((playerSave.item_counts.hint_ticket || 0) > 0) {
         playerSave = persistPlayerSave({
@@ -547,11 +550,16 @@ async function main() {
           },
         });
       }
-      hintMessageEl.textContent = `ヒント: ${formatHintMove(hintMove)}`;
+      const labels = new Map([[1, '最善手'], [2, '次善手'], [3, '3番手']]);
+      hintMessageEl.textContent = hintMoves
+        .map(({ rank, move }) => `${labels.get(rank) || `${rank}番手`}：${formatHintMove(move, currentSfen)}`)
+        .join('\n');
     } catch (error) {
       console.error('ヒントの取得に失敗しました', error);
       hintMessageEl.textContent = 'ヒントを取得できませんでした。';
     } finally {
+      engine.applyStrengthOptions({ multiPv: effectiveMoveRank.max });
+      if (restoreStandardBook) engine.enablePreloadedBook();
       engineBusy = false;
       updateAssistButtons();
       updateDeclareWinButton();
