@@ -12,6 +12,17 @@ nav_order: 7
 
 ## [Unreleased]
 
+### Added
+
+- ShogiHome 1.28.0の盤面部品と`tsshogi`を切り出した再利用用Web Componentパッケージ`shogi-match-ui/`を追加。SFEN入力、USI出力、成り選択、持ち駒打ち、候補手矢印をエンジン非依存で提供
+- 対局画面の標準盤面をShogiHome UIへ切り替え、ヒント解析の上位3候補を盤上の矢印と評価ラベルへリアルタイム反映
+- COEP環境で外部画像が遮断されないよう、shogi-images由来の盤・駒・駒台・矢印を同一オリジン配信へ変更
+- RPG対局UIへWeb Componentを接続する互換アダプターを追加。既存のエンジン、待った、千日手、結果返却を変更せずに盤面を差し替え
+
+### Changed
+
+- Hostingのvendor許可リストと第三者素材台帳に、生成済み`shogi-match-ui`バンドル、ShogiHome（MIT）、shogi-images（CC0）を追加
+
 ### 七つの将棋村 本編
 
 - `data/world.json`を正とする7章・25対局を、エンディングまで遊べる本編SPAへ接続

@@ -50,6 +50,11 @@ src/board-ui/vendor/*
 !src/board-ui/vendor/yaneuraou.halfkp.noeval.js
 !src/board-ui/vendor/yaneuraou.halfkp.noeval.wasm
 !src/board-ui/vendor/yaneuraou.halfkp.noeval.worker.js
+!src/board-ui/vendor/shogi-match-ui.js
+!src/board-ui/vendor/shogi-match-ui.css
+
+# 独立リポジトリとして管理する再利用用盤面パッケージ
+/shogi-match-ui/
 
 # yaneuraou.jsは.dataファイルをindex.html基準の相対パスでfetchするため、
 # vendor/とは別にindex.htmlと同じ階層にも配置が必要（README参照）

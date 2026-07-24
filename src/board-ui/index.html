@@ -38,6 +38,7 @@
     width: min(100%, 600px); margin: 0; padding: 0 8px 18px;
     filter: drop-shadow(0 16px 24px rgba(0,0,0,0.35));
   }
+  shogi-match-board { display: block; width: 100%; }
   #match-layout {
     display: grid; grid-template-columns: minmax(0, 600px) 190px;
     align-items: end; justify-content: center; gap: 8px;
@@ -244,6 +245,8 @@
     <button id="loading-retry" hidden>再試行</button>
   </div>
 
-  <script type="module" src="./main.js?v=live-hint-pv-1"></script>
+  <link rel="stylesheet" href="./vendor/shogi-match-ui.css">
+  <script type="module" src="./vendor/shogi-match-ui.js"></script>
+  <script type="module" src="./main.js?v=shogihome-adapter-1"></script>
 </body>
 </html>

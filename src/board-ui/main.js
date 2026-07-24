@@ -9,6 +9,7 @@
 import { ShogiEngine } from '../engine/engine.js?v=live-hint-pv-1';
 // クエリを更新すると、展示端末に残った旧版の盤面描画コードを確実に置き換えられる。
 import { BoardView, Color } from './board.js?v=adventure-cell-hitbox-1';
+import { mountShogiMatchUiBoard } from './shogihome-board-adapter.mjs';
 import {
   calculateEffectiveNodeLimit,
   varyNodeLimit,
@@ -421,6 +422,12 @@ async function main() {
     moveHistoryLength: 0,
     repetitionLength: repetitionTracker.length,
   });
+  // ShogiHomeの盤面を標準表示にする。比較が必要な場合だけboard_ui=legacyで旧盤面を使う。
+  const shogiMatchBoard = params.get('board_ui') === 'legacy'
+    ? null
+    : mountShogiMatchUiBoard(
+      board, document.getElementById('board-container'), onHumanMove
+    );
 
   function hintCandidateLines(candidate, currentSfen) {
     const labels = new Map([[1, '最善手'], [2, '次善手'], [3, '3番手']]);
@@ -557,6 +564,7 @@ async function main() {
     engineBusy = true;
     hintAnalyzing = true;
     hintStopRequested = false;
+    shogiMatchBoard?.setRecommendedMoves();
     hintMessageEl.textContent = '解析を開始しています...\nもう一度押すと停止します。';
     updateAssistButtons();
     updateDeclareWinButton();
@@ -589,6 +597,10 @@ async function main() {
                   .flatMap((candidate) => hintCandidateLines(candidate, currentSfen)),
                 'もう一度押すと停止します。',
               ].join('\n');
+              shogiMatchBoard?.setRecommendedMoves(
+                latestUpdate.candidates.slice(0, HINT_MULTI_PV)
+                  .map(({ move, score }) => ({ usi: move, score }))
+              );
             });
           },
         });
@@ -623,6 +635,12 @@ async function main() {
           ...detailByRank.get(rank),
         }, currentSfen)),
       ].join('\n');
+      shogiMatchBoard?.setRecommendedMoves(
+        hintMoves.map(({ rank, move }) => ({
+          usi: move,
+          score: detailByRank.get(rank)?.score,
+        }))
+      );
     } catch (error) {
       console.error('ヒントの取得に失敗しました', error);
       hintMessageEl.textContent = 'ヒントを取得できませんでした。';
@@ -659,6 +677,7 @@ async function main() {
     moveHistory.length = snapshot.moveHistoryLength;
     repetitionTracker.truncate(snapshot.repetitionLength);
     board.restoreSfen(snapshot.sfen);
+    shogiMatchBoard?.setRecommendedMoves();
     setYakobihimeSpeech(options.formationCallouts.undo_speech);
     hintMessageEl.textContent = '';
     setStatus('待ったを使いました。指し直してください。');
@@ -669,6 +688,7 @@ async function main() {
   async function onHumanMove(usiMove) {
     if (gameOver) return;
     engineBusy = true;
+    shogiMatchBoard?.setRecommendedMoves();
     hintMessageEl.textContent = '';
     declareWinButton.disabled = true;
     updateAssistButtons();

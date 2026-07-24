@@ -16,6 +16,8 @@ const BOARD_FILE_EXTENSIONS = new Set(['.html', '.js', '.mjs', '.data']);
 const EXCLUDED_BOARD_FILES = new Set(['server.js']);
 const APPROVED_VENDOR_FILES = new Set([
   'shogi.esm.js',
+  'shogi-match-ui.css',
+  'shogi-match-ui.js',
   'yaneuraou.data',
   'yaneuraou.halfkp.noeval.js',
   'yaneuraou.halfkp.noeval.wasm',
@@ -141,6 +143,7 @@ function build() {
     join(DIST, 'assets', 'books', 'standard_book.db'),
   );
   copyTree(join('assets', 'characters'), (file) => ['.png', '.webp'].includes(extname(file)));
+  copyTree(join('assets', 'shogihome'), (file) => ['.png', '.svg'].includes(extname(file)));
   copyBoardUi();
   copyFile(join(ROOT, 'LICENSE'), join(DIST, 'LICENSE'));
   copyFile(
